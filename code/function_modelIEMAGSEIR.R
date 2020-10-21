@@ -48,7 +48,7 @@ loadInterventions = function(p_workopen)
   
 }
 
-getbeta = function(R0t,constraints,gamma,p_age,calculate_transmission_probability=1,CONTACTMATRIX = contacts)
+getbeta = function(R0t,constraints,pars,p_age,calculate_transmission_probability=1,CONTACTMATRIX = contacts)
 {
   # 1) R0
   # 2) gamma = removal rate  
@@ -56,6 +56,18 @@ getbeta = function(R0t,constraints,gamma,p_age,calculate_transmission_probabilit
   # 4) constraints = a scale matrix contstraint age- and location-specific contact matrices (a linear combination over all locations; TODO to specify carefully based on interventions)
   # 5) calculate_transmission_probability if this is 1, then calculate the transmission probability from R0 otherwise, assume it is beta=0.05 
   # 6) npop = population size 
+  # Extract Parameters
+  h <- pars["h"]
+  i <- pars["i"]
+  j <- pars["j"]
+  L <- pars["L"]
+  Cv <- pars["Cv"]
+  Dv <- pars["Dv"]
+  f <- pars["f"]
+  q <- pars["q"]
+  tv <- pars["tv"]
+  TT <- pars["TT"]
+  g <- 1 - f
   
   # constraints for age-specific contacts at home, work, school, others
   n = 16 #length(p_age)
@@ -83,7 +95,17 @@ getbeta = function(R0t,constraints,gamma,p_age,calculate_transmission_probabilit
       }
     }
     eig = eigen(M)
-    beta = R0t*gamma/max(Re(eig$values))  # reverse engineer beta from the R0 and gamma 
+    
+    # Compartment Contributions
+    IaC <- prod(f, Dv, h)
+    IpC <- prod(g, Cv - L)
+    IiC <- prod(g, q, Dv - Cv + L, i)
+    It1C <- prod(g, tv, TT)
+    It2C <- prod(g, tv, Dv - Cv + L - TT, j)
+    InC <- prod(g, 1 - q - tv, Dv - Cv + L)
+    allC <- sum(IaC, IpC, IiC, It1C, It2C, InC)
+    
+    beta = R0t/(allC*max(Re(eig$values)))  # reverse engineer beta from the R0 and gamma 
     beta = beta
   }else{
     beta = 0.025#0.05
@@ -100,7 +122,7 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
                                     pWorkOpen = c(0.1,0.25,0.5,0.9), # pWorkOpen: proportion of the work force that is working (will be time-varying)
                                     dateStartSchoolClosure = as.Date('2020-03-12') , # cause winter term break 
                                     dateStartIntenseIntervention = as.Date('2020-03-27') , #Intense intervention: starts at Wuhan Lockdown
-                                    dateEndIntenseIntervention, #date we begin relaxing intense intervention 
+                                    dateEndIntenseIntervention = as.Date('2020-05-18'), #date we begin relaxing intense intervention 
                                     dateStart = as.Date('2020-02-28'),
                                     POP = dubpop,
                                     numWeekStagger = c(2,4,6),
@@ -125,19 +147,30 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
   
   # Specify epi info
  
-  #params <- c(4.9, 5.9, 7.0, 0.25, 0.05, 0.05, 0.5, 0.75, 0.13, 3.6)
-
-  L <- 4.9
-  Cv <- 5.9
-  Dv <- 7.0
-  h <- 0.25
-  i <- 0.05
-  j <- 0.05
-  f <- 0.5
-  tv <- 0.75
-  q <- 0.13
-  TT <- 3.6
+  pars <- c(4.9, 5.9, 7.0, 0.25, 0.05, 0.05, 0.5, 0.75, 0.13, 3.6)
+  names(pars) <- c("L","Cv","Dv","h","i","j","f","tv","q","TT")
+ 
+  L <- pars["L"]
+  Cv <- pars["Cv"]
+  Dv <- pars["Dv"]
+  h <- pars["h"]
+  i <- pars["i"]
+  j <- pars["j"]
+  f <- pars["f"]
+  tv <- pars["tv"]
+  q <- pars["q"]
+  TT <- pars["TT"]
   
+  # L <- 4.9
+  # Cv <- 5.9
+  # Dv <- 7.0
+  # h <- 0.25
+  # i <- 0.05
+  # j <- 0.05
+  # f <- 0.5
+  # tv <- 0.75
+  # q <- 0.13
+  # TT <- 3.6
   
   dt = 1;                                                # Time step (days)
   tmax = 365;                                            # Time horizon (days) 366 days in 2020 cause of leap year
@@ -199,9 +232,9 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
   
   ################################################################################################################### 
   
-  beta = getbeta(R0t = R0t,constraints = constraintsIntervention$base,gamma = gamma,p_age = pop$p_age)
+  beta = getbeta(R0t = R0t,constraints = constraintsIntervention$base,pars = pars, p_age = pop$p_age)
   
-  if(pWorkOpen[2]<1) beta_postfirstwave = getbeta(R0t = R0tpostoutbreak,constraints = constraintsIntervention$base,gamma = gamma,p_age = pop$p_age)
+  if(pWorkOpen[2]<1) beta_postfirstwave = getbeta(R0t = R0tpostoutbreak,constraints = constraintsIntervention$base,pars = pars,p_age = pop$p_age)
   if(pWorkOpen[2]>=1) beta_postfirstwave = beta#getbeta(R0t = R0t[2],constraints = constraintsIntervention$base,gamma = gamma,p_age = pop$p_age)
   
   ###################################################################################################################
@@ -300,7 +333,7 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
     Cr[stepIndex+1,] = Cr[stepIndex,] + (dCrdt*dt)
     
     
-    incidence[stepIndex+1,] = dItdt;     # Only the clinical cases are included in the incidence per day
+    incidence[stepIndex+1,] = Cr[stepIndex+1,];     # Only the clinical cases are included in the incidence per day
     time[stepIndex+1] = time[stepIndex] + dt;
   }
   
