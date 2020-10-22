@@ -105,9 +105,6 @@ getbeta = function(R0t,constraints,pars,p_age,calculate_transmission_probability
     InC <- prod(g, 1 - q - tv, Dv - Cv + L)
     allC <- sum(IaC, IpC, IiC, It1C, It2C, InC)
     
-    #allc <- ((f - 1)*(((i -1)*q*(Cv - L)) + ((j - 1)*tv*(Cv - L + TT)))) + 
-    #  (Dv*((f*(h - (i*q) - (j*tv) + q + tv -1)) + ((i -1)*q) + ((j - 1)*tv) + 1))
-    
     beta = R0t/(max(Re(eig$values))*allC)  # reverse engineer beta from the R0 and gamma 
     
     beta = beta
@@ -130,7 +127,7 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
                                     dateStart = as.Date('2020-02-28'),
                                     POP = dubpop,
                                     numWeekStagger = c(2,4,6),
-                                    pInfected = 0.0002
+                                    pInfected = 0.0002,
                                     contacts_ireland = contacts)
 {
   # debug dateStartIntenseIntervention = as.Date('2020-01-23')  
