@@ -86,7 +86,7 @@ getbeta = function(R0t,constraints,pars,p_age,calculate_transmission_probability
     constraints_base[[3]]%*%CONTACTMATRIX[[3]]+
     constraints_base[[4]]%*%CONTACTMATRIX[[4]]
   
-  if (calculate_transmission_probability==1){
+  if (calculate_transmission_probability == 1){
     M = C
     for(i in 1:n)
     {
@@ -105,7 +105,11 @@ getbeta = function(R0t,constraints,pars,p_age,calculate_transmission_probability
     InC <- prod(g, 1 - q - tv, Dv - Cv + L)
     allC <- sum(IaC, IpC, IiC, It1C, It2C, InC)
     
-    beta = R0t/(allC*max(Re(eig$values)))  # reverse engineer beta from the R0 and gamma 
+    #allc <- ((f - 1)*(((i -1)*q*(Cv - L)) + ((j - 1)*tv*(Cv - L + TT)))) + 
+    #  (Dv*((f*(h - (i*q) - (j*tv) + q + tv -1)) + ((i -1)*q) + ((j - 1)*tv) + 1))
+    
+    beta = R0t/(max(Re(eig$values))*allC)  # reverse engineer beta from the R0 and gamma 
+    
     beta = beta
   }else{
     beta = 0.025#0.05
@@ -126,8 +130,7 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
                                     dateStart = as.Date('2020-02-28'),
                                     POP = dubpop,
                                     numWeekStagger = c(2,4,6),
-                                    pInfected = 0.0002,
-                                    durInf = 7,  #duration of infection 
+                                    pInfected = 0.0002
                                     contacts_ireland = contacts)
 {
   # debug dateStartIntenseIntervention = as.Date('2020-01-23')  
@@ -189,7 +192,6 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
   
   time = array(0,numSteps)
   
-  
   # Initialise the time-dependent variables, i.e. setting the values of the variables at time 0
   
   Ev[1,] = 0
@@ -232,7 +234,7 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
   
   ################################################################################################################### 
   
-  beta = getbeta(R0t = R0t,constraints = constraintsIntervention$base,pars = pars, p_age = pop$p_age)
+  beta <- getbeta(R0t = R0t,constraints = constraintsIntervention$base,pars = pars, p_age = pop$p_age)
   
   if(pWorkOpen[2]<1) beta_postfirstwave = getbeta(R0t = R0tpostoutbreak,constraints = constraintsIntervention$base,pars = pars,p_age = pop$p_age)
   if(pWorkOpen[2]>=1) beta_postfirstwave = beta#getbeta(R0t = R0t[2],constraints = constraintsIntervention$base,gamma = gamma,p_age = pop$p_age)
@@ -283,22 +285,20 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
     
     # beta = getbeta(R0t = R0t[stepIndex],constraints = constraintsIntervention$base,gamma = gamma,p_age = pop$p_age)
     
-    if(time[stepIndex] < tEndIntenseIntervention+0) lambda[stepIndex,] = as.numeric(beta)*((as.matrix(C)%*%as.matrix(Ip[stepIndex,]) + 
-                                                                                              (h*as.matrix(C)%*%(as.matrix(IA[stepIndex,]))) + 
-                                                                                              (i*as.matrix(C)%*%(as.matrix(Ii[stepIndex,])) + 
+    if(time[stepIndex] < tEndIntenseIntervention+0) lambda[stepIndex,] = as.numeric(beta)*(((as.matrix(C)%*%as.matrix(Ip[stepIndex,])) + 
+                                                                                              (as.matrix(C)%*%(h*as.matrix(IA[stepIndex,]))) + 
+                                                                                              (as.matrix(C)%*%(i*as.matrix(Ii[stepIndex,]))) + 
                                                                                                  (as.matrix(C)%*%as.matrix(It[stepIndex,])) + 
-                                                                                                 (j*as.matrix(C)%*%as.matrix(Iti[stepIndex,])) + 
-                                                                                                 (as.matrix(C)%*%as.matrix(Iq[stepIndex,]))))/N_age);
+                                                                                                 (as.matrix(C)%*%(j*as.matrix(Iti[stepIndex,]))) + 
+                                                                                                 (as.matrix(C)%*%as.matrix(Iq[stepIndex,])))/N_age);
 
-    if(time[stepIndex] >= tEndIntenseIntervention+0)lambda[stepIndex,] = as.numeric(beta_postfirstwave)*((as.matrix(C)%*%as.matrix(Ip[stepIndex,]) + 
-                                                                                                            (h*as.matrix(C)%*%(as.matrix(IA[stepIndex,]))) + 
-                                                                                                            (i*as.matrix(C)%*%(as.matrix(Ii[stepIndex,])) + 
-                                                                                                               (as.matrix(C)%*%as.matrix(It[stepIndex,])) + 
-                                                                                                               (j*as.matrix(C)%*%as.matrix(Iti[stepIndex,])) + 
-                                                                                                               (as.matrix(C)%*%as.matrix(Iq[stepIndex,]))))/N_age);
-    
+    if(time[stepIndex] >= tEndIntenseIntervention+0)lambda[stepIndex,] = as.numeric(beta_postfirstwave)*(((as.matrix(C)%*%as.matrix(Ip[stepIndex,])) + 
+                                                                                                            (as.matrix(C)%*%(h*as.matrix(IA[stepIndex,]))) + 
+                                                                                                            (as.matrix(C)%*%(i*as.matrix(Ii[stepIndex,]))) + 
+                                                                                                            (as.matrix(C)%*%as.matrix(It[stepIndex,])) + 
+                                                                                                            (as.matrix(C)%*%(j*as.matrix(Iti[stepIndex,]))) + 
+                                                                                                            (as.matrix(C)%*%as.matrix(Iq[stepIndex,])))/N_age);
     # calculate the number of infections and recoveries between time t and t+dt
-    
     # Derivatives
     dSdt <- -lambda[stepIndex,]*S[stepIndex,]#-(beta*S[stepIndex,]*(Ip[stepIndex,] + h*IA[stepIndex,] + i*Ii[stepIndex,] + It[stepIndex,] + j*Iti[stepIndex,] + Iq[stepIndex,]))/N_age
     
@@ -320,20 +320,18 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
     
     dCrdt <- It[stepIndex,]/TT
     
+    S[stepIndex + 1,] = S[stepIndex,] + (dSdt*dt)
+    Ev[stepIndex + 1,] = Ev[stepIndex,] + (dEvdt*dt)
+    Ip[stepIndex + 1,] = Ip[stepIndex,] + (dIpdt*dt)
+    IA[stepIndex + 1,] = IA[stepIndex,] + (dIAdt*dt)
+    Ii[stepIndex + 1,] = Ii[stepIndex,] + (dIidt*dt)
+    It[stepIndex + 1,] = It[stepIndex,] + (dItdt*dt)
+    Iti[stepIndex + 1,] = Iti[stepIndex,] + (dItidt*dt)
+    Iq[stepIndex + 1,] = Iq[stepIndex,] + (dIqdt*dt)
+    R[stepIndex + 1,] = R[stepIndex,] + (dRdt*dt)
+    Cr[stepIndex + 1,] = Cr[stepIndex,] + (dCrdt*dt)
     
-    S[stepIndex+1,] = S[stepIndex,] + (dSdt*dt)
-    Ev[stepIndex+1,] = Ev[stepIndex,] + (dEvdt*dt)
-    Ip[stepIndex+1,] = Ip[stepIndex,] + (dIpdt*dt)
-    IA[stepIndex+1,] = IA[stepIndex,] + (dIAdt*dt)
-    Ii[stepIndex+1,] = Ii[stepIndex,] + (dIidt*dt)
-    It[stepIndex+1,] = It[stepIndex,] + (dItdt*dt)
-    Iti[stepIndex+1,] = Iti[stepIndex,] + (dItidt*dt)
-    Iq[stepIndex+1,] = Iq[stepIndex,] + (dIqdt*dt)
-    R[stepIndex+1,] = R[stepIndex,] + (dRdt*dt)
-    Cr[stepIndex+1,] = Cr[stepIndex,] + (dCrdt*dt)
-    
-    
-    incidence[stepIndex+1,] = Cr[stepIndex+1,];     # Only the clinical cases are included in the incidence per day
+    incidence[stepIndex+1,] = Ip[stepIndex+1,];     # Only the clinical cases are included in the incidence per day
     time[stepIndex+1] = time[stepIndex] + dt;
   }
   
@@ -354,7 +352,7 @@ if(CHECKMODEL)
   
   
   # test for an R0 value of 2.2
-  R0est = 3.5
+  R0est = 15
   # R0est = sample(x = r0posterior,size = 100)
   
   nsim = 1
@@ -368,21 +366,22 @@ if(CHECKMODEL)
     epi_doNothing[[sim]] = simulateOutbreakSEIcIscR(R0t =R0est,dateStartSchoolClosure = as.Date('2020-03-10'),
                                                     dateStartIntenseIntervention =as.Date('2020-03-10'),
                                                     dateEndIntenseIntervention = as.Date('2020-03-10'),
-                                                    pWorkOpen = c(1,1,1,1),numWeekStagger = c(0,0,0,0),durInf = 3)
+                                                    pWorkOpen = c(1,1,1,1),numWeekStagger = c(0,0,0,0))
     
-    epi_base[[sim]] = simulateOutbreakSEIcIscR(R0t =R0est ,dateEndIntenseIntervention = as.Date('2020-05-18'),durInf = 3)
+    epi_base[[sim]] = simulateOutbreakSEIcIscR(R0t = R0est ,dateEndIntenseIntervention = as.Date('2020-05-18'))
     
  
   }
   par(mfrow=c(2,1))
   
   # incidence over time
-  agegp = 5
+  agegp = 4
   plot(epi_doNothing[[1]]$time, epi_doNothing[[1]]$incidence[,agegp], type='l', lwd=2,
        main=paste0("Incidence for age [",(agegp-1)*5,',',agegp*5,')'),
        xlab="Time(days)", ylab="Daily no. of infections");
   lines(x=epi_base[[1]]$time,y=epi_base[[1]]$incidence[,agegp],lwd=2,col='tomato')
 
+  
   
   # cumulative incidence over time
   plot(epi_doNothing[[1]]$time, (epi_doNothing[[1]]$N_age[agegp]-epi_doNothing[[1]]$S[,agegp])/epi_doNothing[[1]]$N_age[agegp], lwd=2,type='l', 
@@ -390,9 +389,15 @@ if(CHECKMODEL)
        xlab="Time(days)", ylab="Cum incidence",ylim = c(0,1));
   lines(epi_base[[1]]$time, (epi_base[[1]]$N_age[agegp]-epi_base[[1]]$S[,agegp])/epi_base[[1]]$N_age[agegp],lwd=2,col='tomato')
   legend(0.25, 0.98, legend=c("Do Nothing", "Base"),
-         col=c("black", "grey40"), bty='n',lty=c(1,1),lwd=c(2,2), cex=0.7)
+         col=c("black", "tomato"), bty='n',lty=c(1,1),lwd=c(2,2), cex=0.7)
   
-
+  
+  agegp = 4
+  plot(epi_doNothing[[1]]$time, epi_doNothing[[1]]$S[,agegp], type='l', lwd=2,
+       main=paste0("Incidence for age [",(agegp-1)*5,',',agegp*5,')'),
+       xlab="Time(days)", ylab="Daily no. of infections");
+  lines(x=epi_base[[1]]$time,y=epi_base[[1]]$S[,agegp],lwd=2,col='tomato')
+  lines(x=epi_base[[1]]$time,y=epi_base[[1]]$incidence[,agegp],lwd=2,col='grey')
   
 }
 
