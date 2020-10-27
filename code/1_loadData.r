@@ -15,7 +15,7 @@ loadR0posterior =TRUE
 # 1) population data
 if(loadPopData) 
 { 
-  dubpop = read.csv('data/countypop.csv',as.is = TRUE)
+  dubpop = read.csv('data/CoDubpop.csv',as.is = TRUE)
 }
 
 # 2) (projected) contact matrices 
@@ -41,7 +41,7 @@ normalize.contact.matrices <- function(C, popv, make.sym = F){
 # Synthetic contact matrices for China from Prem, Cook and Jit (2017) https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005697   
 if(loadContactMatrices)
 {
-  load(paste0('data/contacts_IRL.rdata'))
+  load(paste0('data/contacts_IRL.Rdata'))
   contacts <- contacts_IRL # normalize.contact.matrices(contacts_china,wuhanpop$popage, make.sym=T)
   rm(contacts_IRL)
 }

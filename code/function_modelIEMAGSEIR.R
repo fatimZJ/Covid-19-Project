@@ -197,7 +197,7 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
                                     POP = dubpop,
                                     numWeekStagger = c(4,8,12),
                                     pInfected = 0.00002,
-                                    contacts_ireland = contacts_IRL)
+                                    contacts_ireland = contacts)
 {
   # debug dateStartIntenseIntervention = as.Date('2020-01-23')  
   # debug dateEndIntenseIntervention = as.Date('2020-03-01')
@@ -417,7 +417,7 @@ if(CHECKMODEL)
   
   
   # test for an R0 value of 2.2
-  R0est = 15
+  R0est = 3.5
   # R0est = sample(x = r0posterior,size = 100)
   
   nsim = 1
