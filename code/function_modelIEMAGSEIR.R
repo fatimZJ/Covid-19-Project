@@ -162,7 +162,7 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
   
  
   dt = 1;                                                # Time step (days)
-  tmax = 365;                                            # Time horizon (days) 366 days in 2020 cause of leap year
+  tmax = 365*2;                                            # Time horizon (days) 366 days in 2020 cause of leap year
   numSteps = tmax/dt;  	                                 # Total number of simulation time steps
   dateEnd = dateStart+(tmax-1)
   
@@ -337,7 +337,7 @@ if(CHECKMODEL)
   
   
   # test for an R0 value of 2.2
-  R0est = 3.5
+  R0est = 1.6
   # R0est = sample(x = r0posterior,size = 100)
   
   nsim = 1
