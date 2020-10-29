@@ -139,8 +139,8 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
   # Load population information
   pop = list()
   pop$N = sum(POP$popage)
-  pop$p_age = dubpop$propage
-  N_age = pop$N*pop$p_age                                # Population age structure (in numbers)
+  pop$p_age = POP$propage
+  N_age = POP$popage                               # Population age structure (in numbers)
   # contacts_ireland = CONTACTS
   
   
@@ -337,7 +337,7 @@ if(CHECKMODEL)
   
   
   # test for an R0 value of 2.2
-  R0est = 1.6
+  R0est = 2
   # R0est = sample(x = r0posterior,size = 100)
   
   nsim = 1
