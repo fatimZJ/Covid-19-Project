@@ -1,3 +1,4 @@
+source('code/1_loadData.r')
 
 ### Use R0 to get beta
 getbeta <- function(R0t, pars, constraints, p_age, calculate_transmission_probability = TRUE, CONTACTMATRIX = contacts) {
@@ -63,24 +64,24 @@ getbeta <- function(R0t, pars, constraints, p_age, calculate_transmission_probab
   ### Calculate and return beta
   eig <- eigen(N%*%V_inv)
   R0t / max(Re(eig$values))
-  
-  #0.3
 }
 
 
-Irl_pop <- read.csv("Data/Ireland_pop.csv")    #population of Ireland! versus population of County Dublin
-JG_SEIR_out <- read.csv("Data/dat_seir_code.csv", row.names = NULL)
+Irl_pop <- read.csv('data/CoDubpop.csv',as.is = TRUE)#read.csv("Data/Ireland_pop.csv")    #population of Ireland! versus population of County Dublin
+
+JG_SEIR_out <- read.csv("Data/dat_seir_code1.csv", row.names = NULL)
+
+
 dim(JG_SEIR_out)
 JG_SEIR_out <- t(JG_SEIR_out)
-colnames(JG_SEIR_out)
-rownames(JG_SEIR_out)
+#colnames(JG_SEIR_out)
+#rownames(JG_SEIR_out)
 
 JG_SEIR_out <- cbind(rownames(JG_SEIR_out), data.frame(JG_SEIR_out, row.names=NULL))
 colnames(JG_SEIR_out) <- c(JG_SEIR_out[1,])
 JG_SEIR_out <- JG_SEIR_out[-1,]
 
 head(JG_SEIR_out)
-
 
 Rt <- as.numeric(JG_SEIR_out[,9])
 pars <- c(4.9, 5.9, 7.0, 0.25, 0.05, 0.05, 0.5, 0.75, 0.13, 3.6)
@@ -92,16 +93,13 @@ constraints <- list(home = diag(1,16,16),
                     others = diag(1,16,16))
 
 p_age <- Irl_pop$propage
-CONTACTMATRIX <- contacts
+class(p_age)
+load(paste0('data/contacts_IRL.Rdata'))
+CONTACTMATRIX <- contacts_IRL
 
-Bt_d <- vector()
-for (i in 1:length(Rt)){
- 
-beta <- getbeta(R0t = Rt[i], pars = pars, constraints = constraints, p_age = p_age, 
-        calculate_transmission_probability = TRUE, CONTACTMATRIX = CONTACTMATRIX) 
-Bt_d[i] <- beta
-}
-  
+Bt_d <- getbeta(R0t = Rt[i], pars = pars, constraints = constraints, p_age = p_age, 
+                  calculate_transmission_probability = TRUE, CONTACTMATRIX = CONTACTMATRIX) 
+
 plot(as.numeric(JG_SEIR_out$Beta), col = "red", type = "l", lwd = 1.5)
 lines(Bt_d, type = "l", lwd = 1.5)
 
@@ -114,6 +112,7 @@ C <- constraints[[1]]%*%Csym[[1]]+
   constraints[[2]]%*%Csym[[2]]+
   constraints[[3]]%*%Csym[[3]]+
   constraints[[4]]%*%Csym[[4]]
+
 n <- dim(C)[1]
 M = C
 for(i in 1:n)
@@ -123,7 +122,7 @@ for(i in 1:n)
   }
 }
 eig = eigen(M)
-  
+
 BTest = as.numeric(JG_SEIR_out$Beta)/max(Re(eig$values))
 
 
@@ -160,4 +159,71 @@ plot(as.numeric(JG_SEIR_out$Beta), col = "red", type = "l", lwd = 2)
 lines(Bt_d, type = "l", lwd = 2)
 lines(BTest, type = "l", col = "grey", lwd = 2)
 lines(bt, type = "l", col = "green", lwd = 2)
+################################################################################
+
+getbeta1 = function(R0t, constraints, pars, p_age, CONTACTMATRIX = contacts)
+{
+  Csym <- lapply(CONTACTMATRIX, function(x, p_age) (x + t(x)*((p_age)%*%t(1/p_age)))/2, p_age) # make sure contacts are reciprocal
+  
+  C <- constraints[[1]]%*%Csym[[1]]+
+    constraints[[2]]%*%Csym[[2]]+
+    constraints[[3]]%*%Csym[[3]]+
+    constraints[[4]]%*%Csym[[4]]
+  
+  n <- dim(C)[1]
+  M = C
+  for(i in 1:n)
+  {
+    for(j in 1:n){
+      M[i,j] = C[i,j]*p_age[i]/p_age[j]
+    }
+  }
+  eig = eigen(M)
+  
+  ### Extract Parameters
+  h <- pars["h"]
+  i <- pars["i"]
+  j <- pars["j"]
+  L <- pars["L"]
+  Cv <- pars["Cv"]
+  Dv <- pars["Dv"]
+  f <- pars["f"]
+  q <- pars["q"]
+  tv <- pars["tv"]
+  TT <- pars["TT"]
+  g <- 1 - f
+  # Compartment Contributions
+  IaC <- prod(f, Dv, h)
+  IpC <- prod(g, Cv - L)
+  IiC <- prod(g, q, Dv - Cv + L, i)
+  It1C <- prod(g, tv, TT)
+  It2C <- prod(g, tv, Dv - Cv + L - TT, j)
+  InC <- prod(g, 1 - q - tv, Dv - Cv + L)
+  allC <- sum(IaC, IpC, IiC, It1C, It2C, InC)
+  
+  beta <- as.numeric(R0t)/(max(Re(eig$values))*allC)
+  
+beta
+    }
+
+
+Bt_f <- getbeta1(R0t = Rt, pars = pars, constraints = constraints, p_age = p_age, 
+                 CONTACTMATRIX = CONTACTMATRIX) 
+
+getbeta1(R0t = 2, pars = pars, constraints = constraints, p_age = p_age, 
+         CONTACTMATRIX = CONTACTMATRIX) 
+
+plot(as.numeric(JG_SEIR_out$Beta), col = "red", type = "l", lwd = 1.5)
+lines(as.numeric(Bt_f), type = "l", lwd = 1.5)
+
+
+plot(as.numeric(JG_SEIR_out$Beta), col = "red", type = "l", lwd = 2)
+lines(Bt_d, type = "l", lwd = 2)
+lines(Bt_f, type = "l", col = "blue", lwd = 2)
+lines(BTest, type = "l", col = "grey", lwd = 2)
+
+
+################################################################################
+plot(as.numeric(JG_SEIR_out$Beta), col = "red", type = "l", lwd = 2)
+lines(Rt/allC, type = "l", lwd = 2)
 

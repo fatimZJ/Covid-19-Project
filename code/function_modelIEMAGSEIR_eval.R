@@ -3,6 +3,7 @@
 ## load data: Population age structure 
 
 source("code/getbeta.R")
+source('code/1_loadData.r')
 
 #### Loading in James Gleason's data
 

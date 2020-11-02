@@ -15,7 +15,7 @@ loadR0posterior =TRUE
 # 1) population data
 if(loadPopData) 
 { 
-  dubpop = read.csv('data/CoDubpop.csv',as.is = TRUE)
+  dubpop = read.csv("data/Ireland_pop.csv",as.is = TRUE)#'data/CoDubpop.csv',as.is = TRUE)
 }
 
 # 2) (projected) contact matrices 
