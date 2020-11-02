@@ -2,6 +2,35 @@
 
 ## load data: Population age structure 
 
+source("code/getbeta.R")
+
+#### Loading in James Gleason's data
+
+## Adapted from https://gist.github.com/jonocarroll/b17ce021b0637a31f584ed08a1fbe733
+read.tcsv = function(file, header=TRUE, sep=",", ...) {
+  
+  n = max(count.fields(file, sep=sep), na.rm=TRUE)
+  x = readLines(file)[-1]
+  
+  .splitvar = function(x, sep, n) {
+    var = unlist(strsplit(x, split=sep))
+    length(var) = n
+    return(var)
+  }
+  
+  x = do.call(cbind, lapply(x, .splitvar, sep=sep, n=n))
+  x = apply(x, 1, paste, collapse=sep) 
+  ## empty strings are converted to NA
+  out = read.csv(text=x, sep=sep, header=header, na.strings = "", ...)
+  return(out)
+  
+}
+
+jg_dat <- read.tcsv("data/dat_seir_code.csv")
+jg_dat$Date <- as.Date(jg_dat$Date, format = "%a %d %b %Y") # Reformat date column
+
+####
+
 loadPopInfo = function(POP)
 {
   pop = list()
@@ -48,129 +77,6 @@ loadInterventions = function(p_workopen)
   
 }
 
-# ### Use R0 to get beta
-# getbeta <- function(R0t, pars, constraints, p_age, calculate_transmission_probability = TRUE, CONTACTMATRIX = contacts) {
-#   
-#   ### Return arbitrary beta if no calculation is desired
-#   if (!calculate_transmission_probability) { return(0.025) }
-#   
-#   ### Extract Parameters
-#   h <- pars["h"]
-#   i <- pars["i"]
-#   j <- pars["j"]
-#   L <- pars["L"]
-#   Cv <- pars["Cv"]
-#   Dv <- pars["Dv"]
-#   f <- pars["f"]
-#   q <- pars["q"]
-#   tv <- pars["tv"]
-#   TT <- pars["TT"]
-#   
-#   ### Prepare population contact matrix and apply constraints
-#   n <- dim(CONTACTMATRIX[[1]])[1]
-#   if (missing(constraints)) {
-#     constraints <- list(home = diag(1,n),
-#                         work = diag(1,n), 
-#                         school = diag(1,n), 
-#                         others = diag(1,n))
-#   }
-#   
-#   Csym <- lapply(CONTACTMATRIX, function(x, p_age) (x + t(x)*((p_age)%*%t(1/p_age)))/2, p_age) # make sure contacts are reciprocal
-#   
-#   C <- constraints[[1]]%*%Csym[[1]]+
-#     constraints[[2]]%*%Csym[[2]]+
-#     constraints[[3]]%*%Csym[[3]]+
-#     constraints[[4]]%*%Csym[[4]]
-#   
-#   ### Create the N matrix
-#   # (this part is horribly inefficient, lots of room for improvement)
-#   transmission_rates <- c(0, 1, h, i, 1, j, 1)
-#   N_vals <- matrix(0, nrow = n, ncol = n*7)
-#   col_ind <- seq(1, n*7, 7)
-#   for(i in 1:n) {
-#     count <- 1
-#     for(j in 1:n) {
-#       k <- col_ind[count]
-#       N_vals[i,k:(k+6)] = transmission_rates * C[i,j] * p_age[i]/p_age[j]
-#       count <- count + 1
-#     }
-#   }
-#   N <- sparseMatrix( dims = rep(n*7, 2), i = rep(seq(1, 7*n, 7), n*7), j = rep(seq(1, n*7), each = n), x = as.vector(N_vals) )
-#   
-#   ### Create the inverse V matrix
-#   V_inv_vals <- c(L, (1-f)*(Cv-L), Cv-L, f*Dv, Dv, (1-f)*q*(Dv-Cv+L),
-#                   q*(Dv-Cv+L), Dv-Cv+L, TT*tv*(1-f), TT*tv, TT,
-#                   tv*(1-f)*(Dv-Cv+L-TT), tv*(Dv-Cv+L-TT), Dv-Cv+L-TT,
-#                   Dv-Cv+L-TT, (1-q-tv)*(1-f)*(Dv-Cv+L), (1-q-tv)*(Dv-Cv+L),
-#                   Dv-Cv+L)
-#   V_inv_i <- c(1, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7)
-#   V_inv_j <- c(1, 1, 2, 1, 3, 1, 2, 4, 1, 2, 5, 1, 2, 5, 6, 1, 2, 7)
-#   V_inv_list <- rep( list(spMatrix(nrow = 7, ncol = 7, i = V_inv_i, j = V_inv_j, x = V_inv_vals)), n)
-#   
-#   V_inv <- bdiag(V_inv_list)
-#  
-#   ### Calculate and return beta
-#   eig <- eigen(N%*%V_inv)
-#   R0t / max(Re(eig$values))
-#  
-#   #0.3
-# }
-
-getbeta <- function(R0t, constraints, pars, p_age, CONTACTMATRIX = contacts, calculate_transmission_probability= TRUE){
-  if (!calculate_transmission_probability) { return(0.025) }
-  
-    Csym <- lapply(CONTACTMATRIX, function(x, p_age) (x + t(x)*((p_age)%*%t(1/p_age)))/2, p_age) # make sure contacts are reciprocal
-    
-    if (missing(constraints)) {
-      constraints <- list(home = diag(1,n),
-                          work = diag(1,n),
-                          school = diag(1,n),
-                          others = diag(1,n))
-    }
-    
-    C <- constraints[[1]]%*%Csym[[1]]+
-      constraints[[2]]%*%Csym[[2]]+
-      constraints[[3]]%*%Csym[[3]]+
-      constraints[[4]]%*%Csym[[4]]
-    
-    n <- dim(C)[1]
-    M = C
-    for(i in 1:n)
-    {
-      for(j in 1:n){
-        M[i,j] = C[i,j]*p_age[i]/p_age[j]
-      }
-    }
-    eig = eigen(M)
-    
-    ### Extract Parameters
-    h <- pars["h"]
-    i <- pars["i"]
-    j <- pars["j"]
-    L <- pars["L"]
-    Cv <- pars["Cv"]
-    Dv <- pars["Dv"]
-    f <- pars["f"]
-    q <- pars["q"]
-    tv <- pars["tv"]
-    TT <- pars["TT"]
-    g <- 1 - f
-    # Compartment Contributions
-    IaC <- prod(f, Dv, h)
-    IpC <- prod(g, Cv - L)
-    IiC <- prod(g, q, Dv - Cv + L, i)
-    It1C <- prod(g, tv, TT)
-    It2C <- prod(g, tv, Dv - Cv + L - TT, j)
-    InC <- prod(g, 1 - q - tv, Dv - Cv + L)
-    allC <- sum(IaC, IpC, IiC, It1C, It2C, InC)
-    
-    beta <- as.numeric(R0t)/(max(Re(eig$values))*allC)
-    
-    #(-1 + f)*(((-1 + i)*(Cv - L)* q) + ((-1 + j)*(Cv - L + TT)*tv)) +
-    #  (Dv *((1 + -1 + i q + -1 + q - i q + tv - j tv
-  
-  beta
-}
 
 
 # Children less infectious and as susceptible 
@@ -180,11 +86,14 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
                                     dateStartSchoolClosure = as.Date('2020-03-12') , # cause winter term break 
                                     dateStartIntenseIntervention = as.Date('2020-03-27') , #Intense intervention: starts at Wuhan Lockdown
                                     dateEndIntenseIntervention = as.Date('2020-05-18'), #date we begin relaxing intense intervention 
-                                    dateStart = as.Date('2020-02-28'), #start date for epidemic in Ireland
+                                    dateStart = as.Date('2020-02-28'),
                                     POP = dubpop,
                                     numWeekStagger = c(4,8,12),
-                                    pInfected = 0.0002,
-                                    contacts_ireland = contacts)
+                                    pInfected = 0.00002,
+                                    contacts_ireland = contacts,
+                                    tmax = 365*2,
+                                    dt = 1,
+                                    dat)
 {
   # debug dateStartIntenseIntervention = as.Date('2020-01-23')  
   # debug dateEndIntenseIntervention = as.Date('2020-03-01')
@@ -192,20 +101,17 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
   # debug rho = rep(0.8,3660) 
   # debug pWorkOpen =  c(0.1,0.25,0.5,1)
   
-  
   # Load population information
   pop = list()
   pop$N = sum(POP$popage)
   pop$p_age = POP$propage
-  N_age = POP$popage                               # Population age structure (in numbers)
-  # contacts_ireland = CONTACTS
-  
+  N_age = POP$popage                                # Population age structure (in numbers)
   
   # Specify epi info
- 
+  
   pars <- c(4.9, 5.9, 7.0, 0.25, 0.05, 0.05, 0.5, 0.75, 0.13, 3.6)
   names(pars) <- c("L","Cv","Dv","h","i","j","f","tv","q","TT")
- 
+  
   L <- pars["L"]
   Cv <- pars["Cv"]
   Dv <- pars["Dv"]
@@ -217,14 +123,13 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
   q <- pars["q"]
   TT <- pars["TT"]
   
- 
-  dt = 1;                                                # Time step (days)
-  tmax = 365*2;                                            # Time horizon (days) 366 days in 2020 cause of leap year
+  
   numSteps = tmax/dt;  	                                 # Total number of simulation time steps
   dateEnd = dateStart+(tmax-1)
   
   # Declare the state variables and related variables:
   # The values of these variables change over time
+  # S = E = Isc = Ic = R = array(0,c(numSteps,length(pop$p_age)))
   
   S = Ev = Ip = IA = Ii = It = Iti = Iq = R = Cr <- array(0,c(numSteps,length(pop$p_age)))
   
@@ -233,29 +138,30 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
   time = array(0,numSteps)
   
   # Initialise the time-dependent variables, i.e. setting the values of the variables at time 0
-  
-  Ev[1,] = 0
-  Ip[1,] = pInfected*sum(N_age)/16
+  #Ev[1,] = pInfected*5*sum(N_age)/16
+  Ev[1,] <- dat$Exposed[1]/16
+  #Ip[1,] = pInfected*sum(N_age)/16
+  Ip[1,] = dat$Infected[1]/16
   IA[1,] = 0
   Ii[1,] = 0
   It[1,] = 0
   Iti[1,] = 0
   Iq[1,] = 0
-  R[1,] = 0
+  #R[1,] = 0
+  R[1,] = dat$Recovered[1]/16
   Cr[1,] = pInfected*sum(N_age)/16 # Initial number of infected people # Assign 100 infected person in each age group (TODO RELAX?)
   S[1,] = N_age - Ev[1,] - Ip[1,] -  IA[1,] - Ii[1,] - It[1,] - Iti[1,] - Iq[1,] - R[1,]
   
   incidence[1,] = 0;
-
-  time[1] = 0;
   
+  time[1] = 0;
+
   ## INTERVENTIONS 
   # School closed 2020-03-12, 
   #lockdown (intense intervention) started 2020-03-27, end of intense intervention: user-specified 
   # note that intense intervention is time-varying control by pWorkOpen: proportion of the work force that is working
   # debug pWorkOpen = c(0.1,0.25,0.5,1)
-  
-  tStartSchoolClosure = as.vector(dateStartSchoolClosure - dateStart)+1#Time to add the school closure effect
+  tStartSchoolClosure = as.vector(dateStartSchoolClosure - dateStart)+1   #Time to add the school closure effect
   tStartIntenseIntervention = as.vector(dateStartIntenseIntervention - dateStart)+1 # or pw = 0.1
   tEndIntenseIntervention = as.vector(dateEndIntenseIntervention - dateStart)+1     # for pw = 0.1
   tRelaxIntervention1 = tEndIntenseIntervention + numWeekStagger[1]*7                               # for pw = 0.25
@@ -271,7 +177,26 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
   
   R0tpostoutbreak = R0t #overwrites the default reduction in R0 post-outbreak 
   # bring r0t to levels pre lockdown so that the only thing that changes is the contacts
- 
+
+  ################################################################################################################### 
+
+  constraintsIntervention = loadInterventions(p_workopen = pwork[1]) # Put here because we need it for the beta function to work, not sure if it actually makes sense? - Daniel
+  beta <- getbeta(R0t = R0t, constraints = constraintsIntervention$base, pars = pars, p_age = POP$popage, CONTACTMATRIX = contacts_ireland)
+  
+  if (length(beta) < numSteps) {
+    warning("Not enough R0t values for full time granularity. Elements of R0t will be vectorised.")
+    beta <- rep(beta, length.out = numSteps)
+  }
+  
+  if (length(beta) > numSteps) {
+    warning("Too many R0t values for time granularity. Vector will be truncated.")
+    beta <- beta[1:numSteps]
+  }
+  
+  if(pWorkOpen[2]<1) beta_postfirstwave = getbeta(R0t = R0t,constraints = constraintsIntervention$base,pars = pars,p_age = POP$popage)
+  if(pWorkOpen[2]>=1) beta_postfirstwave = beta#getbeta(R0t = R0t[2],constraints = constraintsIntervention$base,gamma = gamma,p_age = pop$p_age)
+  
+  ###################################################################################################################
   
   ## solve for S, E, I and R at different time points
   
@@ -306,16 +231,6 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
       CONSTRAINT = constraintsIntervention$postoutbreak
     }
     # 
-    ################################################################################################################### 
-    
-    constraintsIntervention = loadInterventions(p_workopen = pwork[1]) # Put here because we need it for the beta function to work, not sure if it actually makes sense? - Daniel
-    
-    beta <- getbeta(R0t = R0t,constraints = constraintsIntervention$base,pars = pars, p_age = pop$p_age, CONTACTMATRIX = contacts_ireland)
-    
-    if(pWorkOpen[2]<1) beta_postfirstwave = getbeta(R0t = R0tpostoutbreak,constraints = constraintsIntervention$base,pars = pars,p_age = pop$p_age)
-    if(pWorkOpen[2]>=1) beta_postfirstwave = beta#getbeta(R0t = R0t[2],constraints = constraintsIntervention$base,gamma = gamma,p_age = pop$p_age)
-    
-    ###################################################################################################################
     
     ## total contacts matrix
     C = CONSTRAINT[[1]]%*%contacts_ireland[[1]]+
@@ -325,25 +240,25 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
     
     # calculate the force of infection
     
-    if(time[stepIndex] < tEndIntenseIntervention+0) lambda[stepIndex,] = as.numeric(beta)*(as.matrix(C)%*%(as.matrix(Ip[stepIndex,]) + 
-                                                                                              (h*as.matrix(IA[stepIndex,])) + 
-                                                                                            (i*as.matrix(Ii[stepIndex,])) + 
-                                                                                               (as.matrix(It[stepIndex,])) + 
-                                                                                                 (j*as.matrix(Iti[stepIndex,])) + 
-                                                                                               (as.matrix(Iq[stepIndex,]))));
-
-    if(time[stepIndex] >= tEndIntenseIntervention+0)lambda[stepIndex,] = as.numeric(beta_postfirstwave)*(as.matrix(C)%*%(as.matrix(Ip[stepIndex,]) + 
-                                                                                                                           (h*as.matrix(IA[stepIndex,])) + 
-                                                                                                                           (i*as.matrix(Ii[stepIndex,])) + 
-                                                                                                                           (as.matrix(It[stepIndex,])) + 
-                                                                                                                           (j*as.matrix(Iti[stepIndex,])) + 
-                                                                                                                           (as.matrix(Iq[stepIndex,]))));
+    # beta = getbeta(R0t = R0t[stepIndex],constraints = constraintsIntervention$base,gamma = gamma,p_age = pop$p_age)
+    if(time[stepIndex] < tEndIntenseIntervention+0) lambda[stepIndex,] = as.numeric(beta[stepIndex])*(C%*%(as.matrix(Ip[stepIndex,]) + 
+                                                                                                                        (h*as.matrix(IA[stepIndex,])) + 
+                                                                                                                        (i*as.matrix(Ii[stepIndex,])) + 
+                                                                                                                        (as.matrix(It[stepIndex,])) + 
+                                                                                                                        (j*as.matrix(Iti[stepIndex,])) + 
+                                                                                                                        (as.matrix(Iq[stepIndex,]))))/N_age
+    
+    if(time[stepIndex] >= tEndIntenseIntervention+0)lambda[stepIndex,] = as.numeric(beta_postfirstwave[stepIndex])*(C%*%(as.matrix(Ip[stepIndex,]) + 
+                                                                                                                                      (h*as.matrix(IA[stepIndex,])) + 
+                                                                                                                                      (i*as.matrix(Ii[stepIndex,])) + 
+                                                                                                                                      (as.matrix(It[stepIndex,])) + 
+                                                                                                                                      (j*as.matrix(Iti[stepIndex,])) + 
+                                                                                                                                      (as.matrix(Iq[stepIndex,]))))/N_age
     # calculate the number of infections and recoveries between time t and t+dt
     # Derivatives
+    dSdt <- -lambda[stepIndex,]*(S[stepIndex,])#-(beta*S[stepIndex,]*(Ip[stepIndex,] + h*IA[stepIndex,] + i*Ii[stepIndex,] + It[stepIndex,] + j*Iti[stepIndex,] + Iq[stepIndex,]))/N_age
     
-    dSdt <- -lambda[stepIndex,]*(S[stepIndex,]/N_age)
-    
-    dEvdt <- -(Ev[stepIndex,]/L) + (lambda[stepIndex,]*(S[stepIndex,]/N_age))
+    dEvdt <- -(Ev[stepIndex,]/L) + (lambda[stepIndex,]*(S[stepIndex,]))#(beta*S[stepIndex,]*(Ip[stepIndex,] + h*IA[stepIndex,] + i*Ii[stepIndex,] + It[stepIndex,] + j*Iti[stepIndex,] + Iq[stepIndex,]))/N_age
     
     dIpdt <- (((1 - f)*Ev[stepIndex,])/L) - (Ip[stepIndex,]/(Cv - L))
     
@@ -378,10 +293,11 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
   }
   
   output = list( S = S, Ev = Ev, Ip = Ip, IA = IA, Ii = Ii, It = It, Iti = Iti, Iq = Iq, R = R,
-                  Cr = Cr, time = time, lambda=lambda, incidence = incidence, N_age= N_age, R0t = R0t, beta = beta,#rho = rho,
-                dateStart = dateStart, dateEnd = dateEnd, dateStartIntenseIntervention = dateStartIntenseIntervention, 
-                dateEndIntenseIntervention = dateEndIntenseIntervention, dateStartSchoolClosure = dateStartSchoolClosure)
- 
+                 Cr = Cr, time = time, lambda=lambda, incidence = incidence, N_age= N_age, R0t = R0t,#rho = rho,
+                 dateStart = dateStart, dateEnd = dateEnd, dateStartIntenseIntervention = dateStartIntenseIntervention, 
+                 dateEndIntenseIntervention = dateEndIntenseIntervention, dateStartSchoolClosure = dateStartSchoolClosure,
+                 beta = beta, lambda = lambda)
+  
   return(output)
 }
 
@@ -394,42 +310,69 @@ if(CHECKMODEL)
   
   
   # test for an R0 value of 2.2
-  R0est = 2
+  #R0est <- 2.3
+  R0est <- jg_dat$Rt
   # R0est = sample(x = r0posterior,size = 100)
+  
+  ### Set other function parameters
+  dateStart <- jg_dat$Date[1]
+  
+  POP <- dubpop
+  ### Fix population
+  Nv <- sum(POP$popage)
+  POP$popage[1] <- sum(POP$popage[1], 4.9e6 - Nv)
+  sum(POP$popage)
+  
+  tmax <- nrow(jg_dat)
+  dt <- 0.1
+  
+  R0_int <- approx(R0est, xout = seq(1, tmax, dt))$y
+  R0_int <- c(R0_int, rep(R0_int[length(R0_int)], (1/dt)-1))
+  
+  
   
   nsim = 1
   epi_doNothing = vector('list',nsim)
   epi_base = vector('list',nsim)
-
+  
+  cc <- rep(list(matrix(0, nrow = 16, ncol = 16)), 5)
+  #cc[[4]] <- matrix(1, nrow = 16, ncol = 16)
+  cc[[4]] <- diag(16)
+  names(cc) <- c("home", "work", "school", "others", "all")
   
   for(sim in 1:nsim)
   {
     
-    epi_doNothing[[sim]] = simulateOutbreakSEIcIscR(R0t =R0est,dateStartSchoolClosure = as.Date('2020-03-10'),
+    epi_doNothing[[sim]] = simulateOutbreakSEIcIscR(R0t =R0_int,dateStartSchoolClosure = as.Date('2020-03-10'),
                                                     dateStartIntenseIntervention =as.Date('2020-03-10'),
                                                     dateEndIntenseIntervention = as.Date('2020-03-10'),
-                                                    pWorkOpen = c(1,1,1,1),numWeekStagger = c(0,0,0,0))
+                                                    pWorkOpen = c(1,1,1,1),numWeekStagger = c(0,0,0,0),
+                                                    dateStart = dateStart, POP = POP, tmax = tmax,
+                                                    contacts_ireland = cc, pInfected = 0.000001, dt = dt,
+                                                    dat = jg_dat)
     
-    epi_base[[sim]] = simulateOutbreakSEIcIscR(R0t = R0est ,dateEndIntenseIntervention = as.Date('2020-05-18'))
+    #epi_base[[sim]] = simulateOutbreakSEIcIscR(R0t = R0est ,dateEndIntenseIntervention = as.Date('2020-05-18'))
     
- 
+    
   }
   par(mfrow=c(2,1))
   
   # incidence over time
-  agegp = 8
-  plot(epi_doNothing[[1]]$time, epi_doNothing[[1]]$Ip[,agegp], type='l', lwd=2,
+  agegp = 10
+  plot(epi_doNothing[[1]]$time, epi_doNothing[[1]]$incidence[,agegp], type='l', lwd=2,
        main=paste0("Incidence for age [",(agegp-1)*5,',',agegp*5,')'),
        xlab="Time(days)", ylab="Daily no. of infections");
-  lines(x=epi_base[[1]]$time,y=epi_base[[1]]$incidence[,agegp],lwd=2,col='tomato')
+  #lines(x=epi_base[[1]]$time,y=epi_base[[1]]$incidence[,agegp],lwd=2,col='tomato')
+  
+  
   
   # cumulative incidence over time
   plot(epi_doNothing[[1]]$time, (epi_doNothing[[1]]$N_age[agegp]-epi_doNothing[[1]]$S[,agegp])/epi_doNothing[[1]]$N_age[agegp], lwd=2,type='l', 
        main=paste0("Cum incidence for age [",(agegp-1)*5,',',agegp*5,')'),
        xlab="Time(days)", ylab="Cum incidence",ylim = c(0,1));
-  lines(epi_base[[1]]$time, (epi_base[[1]]$N_age[agegp]-epi_base[[1]]$S[,agegp])/epi_base[[1]]$N_age[agegp],lwd=2,col='tomato')
-  legend(0.25, 0.98, legend=c("Do Nothing", "Base"),
-         col=c("black", "tomato"), bty='n',lty=c(1,1),lwd=c(2,2), cex=0.7)
+  #lines(epi_base[[1]]$time, (epi_base[[1]]$N_age[agegp]-epi_base[[1]]$S[,agegp])/epi_base[[1]]$N_age[agegp],lwd=2,col='tomato')
+  #legend(0.25, 0.98, legend=c("Do Nothing", "Base"),
+  #       col=c("black", "tomato"), bty='n',lty=c(1,1),lwd=c(2,2), cex=0.7)
   
   
   # agegp = 4
@@ -440,4 +383,31 @@ if(CHECKMODEL)
   # lines(x=epi_base[[1]]$time,y=epi_base[[1]]$incidence[,agegp],lwd=2,col='grey')
   # 
 }
-epi_doNothing[[1]]$beta
+
+### Validation
+par(mfrow = c(1, 1))
+
+# Beta
+plot(jg_dat$Beta, type = "l")
+lines(xx, epi_doNothing[[1]]$beta, col = "red")
+
+# Infected
+Nv <- sum(POP$popage)
+I <- Nv - rowSums(epi_doNothing[[1]]$S)- rowSums(epi_doNothing[[1]]$Ev)- rowSums(epi_doNothing[[1]]$R)
+xx <- seq_along(I)*dt
+plot(jg_dat$Infected, type = "l")
+lines(xx, I, col = "red")
+
+# Susceptiple
+plot(jg_dat$Susceptible, type = "l")
+lines(xx, rowSums(epi_doNothing[[1]]$S), col = "red")
+
+# Recovered
+plot(jg_dat$Recovered, type = "l")
+lines(xx, rowSums(epi_doNothing[[1]]$R), col = "red")
+
+#FOI
+plot(xx, rowSums(epi_doNothing[[1]]$lambda), col = "red", type = "l")
+lines(jg_dat$ForceInfection, type = "l")
+
+
