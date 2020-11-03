@@ -259,6 +259,11 @@ plot(x = sol_out$time, jg_dat$Recovered, type = "l", lwd = 2)
 lines(rowSums(R), col = "red", lwd = 2)
 
 plot(abs(jg_dat$Infected - (rowSums(cbind(Ip, IA, Ii,It,Iti,Iq)))), lwd = 2, type = "l")
+plot(abs(jg_dat$Susceptible - (rowSums(S))), lwd = 2, type = "l")
+lines(abs(jg_dat$Recovered - (rowSums(R))), lwd = 2, type = "l")
+lines(abs(jg_dat$Infected - (rowSums(cbind(Ip, IA, Ii,It,Iti,Iq)))), lwd = 2, type = "l")
+
+
 
 all.equal(jg_dat$Infected , (rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))))
 
