@@ -36,10 +36,6 @@ source("code/getbeta.R")
 library(deSolve)
 library(tidyverse)
 
-t <- times
-params <- pars
-x <- xstart
-
 SEIR_model <- function (t, x, params) {
   x <- as_vector(x)
   #browser()
@@ -184,10 +180,10 @@ names(xstart) <- xstart_df$names
 
 length(xstart)
 
-sol <- lsoda(xstart, times, SEIR_model, parms)#, rtol = 1e-13, atol = 1e-13)
+sol <- lsoda(xstart, times, SEIR_model, parms, rtol = 1e-14, atol = 1e-14)
 
 class(sol)
-
+diagnostics(sol)
 sol_out <- as.data.frame(sol)
 
 str(sol_out)
@@ -204,7 +200,6 @@ R <- sol_out[grepl('R_',names(sol_out))]
 
 rowSums(sol_out[-1])
 
-
 plot(x = sol_out$time, jg_dat$Infected[1:tmax], lwd = 2, type = "l")
 lines((rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))), lwd = 2, col = "red")
 #lines(xx, I, col = "blue", lwd = 2)
@@ -216,7 +211,7 @@ plot(x = sol_out$time, jg_dat$Recovered[1:tmax], type = "l", lwd = 2)
 lines(rowSums(R), col = "red", lwd = 2)
 
 plot(abs(jg_dat$Infected[1:tmax] - (rowSums(cbind(Ip, IA, Ii,It,Iti,Iq)))), lwd = 2, type = "l")
-
+#par(mfrow = c(1,1))
 #plot(jg_dat$Infected[1:tmax], lwd = 2, type = "l")
 #xx <- seq_along(Ip[,1])*dt
 #lines(xx,(rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))), lwd = 2, col = "red")
