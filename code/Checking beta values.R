@@ -97,7 +97,7 @@ class(p_age)
 load(paste0('data/contacts_IRL.Rdata'))
 CONTACTMATRIX <- contacts_IRL
 
-Bt_d <- getbeta(R0t = Rt[i], pars = pars, constraints = constraints, p_age = p_age, 
+Bt_d <- getbeta(R0t = Rt, pars = pars, constraints = constraints, p_age = p_age, 
                   calculate_transmission_probability = TRUE, CONTACTMATRIX = CONTACTMATRIX) 
 
 plot(as.numeric(JG_SEIR_out$Beta), col = "red", type = "l", lwd = 1.5)

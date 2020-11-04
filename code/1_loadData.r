@@ -7,7 +7,7 @@ require(matrixcalc)
 loadPopData = TRUE
 loadContactMatrices = TRUE
 #loadCaseData =TRUE
-loadR0posterior =TRUE
+#loadR0posterior =TRUE
 
 
 ## load data: Population age structure (currently using China's) and Contact matrices
@@ -56,30 +56,30 @@ if(loadContactMatrices)
 # }
 
 # The get R0estimates for a range of dates, 200 samples for each date range
+# 
+# if(loadR0posterior)
+# {
+#   # --- read in R0 posterior
+#   R0_plot <-read.csv(paste0("data/out_R0.csv"))
+#   R0_dates <- read.csv(paste0('data/out_date.csv'))
+#   start_date <- as.Date(R0_dates[1,1]) # first case
+#   end_date <- as.Date(R0_dates[nrow(R0_dates),1]) # period to forecast ahead
+#   date_range <- seq.Date(start_date,end_date,1)
+#   
+#   # extract all estimates from 01.01.2020 - 23.01.2020
+#   R0_posterior <- R0_plot[which(date_range == as.Date("2020-01-01") ):which(date_range == as.Date("2020-01-23")),]
+#   range(R0_posterior)
+#   r0posterior = as.vector((unlist(R0_posterior)))
+#   par(mfrow=c(2,1))
+#   R0_dense = (density((r0posterior)))
+#   plot(x = R0_dense$x,y=R0_dense$y,type='l',xlab='R0',ylab='Density',lwd=2)
+#   R0_dense = (density(log(r0posterior)))
+#   plot(x = R0_dense$x,y=R0_dense$y,type='l',xlab='ln(R0)',ylab='Density',lwd=2)
+#   
+#   
+#   rm(R0_dense,R0_plot,R0_posterior,date_range,end_date,start_date)
+#   
+# }
+# 
 
-if(loadR0posterior)
-{
-  # --- read in R0 posterior
-  R0_plot <-read.csv(paste0("data/out_R0.csv"))
-  R0_dates <- read.csv(paste0('data/out_date.csv'))
-  start_date <- as.Date(R0_dates[1,1]) # first case
-  end_date <- as.Date(R0_dates[nrow(R0_dates),1]) # period to forecast ahead
-  date_range <- seq.Date(start_date,end_date,1)
-  
-  # extract all estimates from 01.01.2020 - 23.01.2020
-  R0_posterior <- R0_plot[which(date_range == as.Date("2020-01-01") ):which(date_range == as.Date("2020-01-23")),]
-  range(R0_posterior)
-  r0posterior = as.vector((unlist(R0_posterior)))
-  par(mfrow=c(2,1))
-  R0_dense = (density((r0posterior)))
-  plot(x = R0_dense$x,y=R0_dense$y,type='l',xlab='R0',ylab='Density',lwd=2)
-  R0_dense = (density(log(r0posterior)))
-  plot(x = R0_dense$x,y=R0_dense$y,type='l',xlab='ln(R0)',ylab='Density',lwd=2)
-  
-  
-  rm(R0_dense,R0_plot,R0_posterior,date_range,end_date,start_date)
-  
-}
-
-
-rm(loadContactMatrices,loadPopData,loadR0posterior)#,loadCaseData)
+rm(loadContactMatrices,loadPopData)#,loadR0posterior)#,loadCaseData)

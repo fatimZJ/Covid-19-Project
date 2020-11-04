@@ -288,7 +288,6 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
     R[stepIndex + 1,] = R[stepIndex,] + (dRdt*dt)
     Cr[stepIndex + 1,] = Cr[stepIndex,] + (dCrdt*dt)
     
-    
     incidence[stepIndex+1,] = Ip[stepIndex+1,];     # Only the clinical cases are included in the incidence per day
     time[stepIndex+1] = time[stepIndex] + dt;
   }
@@ -329,8 +328,6 @@ if(CHECKMODEL)
   
   R0_int <- approx(R0est, xout = seq(1, tmax, dt))$y
   R0_int <- c(R0_int, rep(R0_int[length(R0_int)], (1/dt)-1))
-  
-  
   
   nsim = 1
   epi_doNothing = vector('list',nsim)

@@ -155,7 +155,7 @@ lines(x = sol_out$time, (rowSums(sol_out[,4:9])), col = "red")
 lines(x = sol_out$time, sol_out$R, col = "blue")
 
 plot(rowSums(sol_out[,4:9]), type = "l")
-#par(mfrow = c(1,1))
+par(mfrow = c(1,1))
 #options(error=recover)
 #sol %>% as.tibble() %>%
 #  gather(variable,value,-time) %>%
