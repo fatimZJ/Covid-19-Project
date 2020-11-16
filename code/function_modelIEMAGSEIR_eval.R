@@ -140,9 +140,9 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
   
   # Initialise the time-dependent variables, i.e. setting the values of the variables at time 0
   #Ev[1,] = pInfected*5*sum(N_age)/16
-  Ev[1,] <- dat$Exposed[1]/16
+  Ev[1,] = 22/16#dat$Exposed[1]/16
   #Ip[1,] = pInfected*sum(N_age)/16
-  Ip[1,] = dat$Infected[1]/16
+  Ip[1,] = 1.1222/16 #dat$Infected[1]/16
   IA[1,] = 0
   Ii[1,] = 0
   It[1,] = 0
@@ -408,4 +408,5 @@ lines(xx, rowSums(epi_doNothing[[1]]$R), col = "red")
 plot(xx, rowSums(epi_doNothing[[1]]$lambda), col = "red", type = "l")
 lines(jg_dat$ForceInfection, type = "l")
 
+#all.equal(jg_dat$Infected , I)
 

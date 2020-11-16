@@ -63,8 +63,13 @@ SEIR_model <- function (t, x, params) {
   tv <- (parms[["tv"]])
   q <- (parms[["q"]])
   TT <- (parms[["TT"]])
-  beta <- (parms[["beta"]][t])
-  #print(beta)
+  timeframe <- parms[["timeframe"]]
+  betas <- (parms[["beta"]])
+  
+  bet_approx <- splinefun(x = timeframe, y = betas) #approxfun(x = timeframe, y = betas, rule = 2)
+  
+  beta <- bet_approx(t)
+  
   N_age <- (parms[["N_age"]])
   
   # total contacts matrix (work + school + household + other)
@@ -114,57 +119,48 @@ names(cc) <- c("home", "work", "school", "others", "all")
 
 contacts_ireland <- cc # contacts
 
+Avg_contacts <- contacts_ireland[[1]] + contacts_ireland[[2]] + 
+  contacts_ireland[[3]] + contacts_ireland[[4]]
+
+## Initialising the comparments 
 groups <- dim(contacts_ireland[[1]])[2]
 
-sum(N_age/4.9e6)
+num_inf <- 0.947286/groups    
+num_exp <- 14.5344/groups
 
-pInfected <- 0.000002
-num_inf <- 1.1222/groups #4.5/groups  #4.5/groups #jg_dat$Infected[1]/groups #pInfected*sum(N_age)/groups 
-num_exp <- 22/groups#14.5344/groups#3.5/groups#jg_dat$Exposed[1]/groups
-num_rec <- jg_dat$Recovered[1]/groups
 #"Mean relative difference: 0.0236159"
-Avg_contacts <- contacts_ireland[[1]] + contacts_ireland[[2]] + 
-                contacts_ireland[[3]] + contacts_ireland[[4]]
 
 ## Setting time scale
-dt <- 1;                           # Time step (days)
-tmax <- nrow(jg_dat)#- 420#365;      # Time horizon (days) 
+dt <- 0.1;                           # Time step (days)
+tmax <- nrow(jg_dat)#               # Time horizon (days) 
 numSteps <- tmax/dt; 
-
-times <- seq(from = 1, to = tmax, by = dt)
+times <- seq(from = 0, to = tmax, by = dt)
 length(times)
 
-## interpolating R
-R0_int <- approx(jg_dat$Rt, xout = times)$y
-length(R0_int)
-
-plot(jg_dat$Rt, type = "l", lwd = 2)#
-xx <- seq_along(R0_int)*dt
-lines(xx,R0_int, lwd = 2, col = "red")
-
-#is.na(R0_int)
-#
 ## Estimating Beta
-pars <- c(4.9, 5.9, 7.0, 0.25, 0.05, 0.05, 0.5, 0.75, 0.13, 3.6)
-names(pars) <- c("L","Cv","Dv","h","i","j","f","tv","q","TT")
+#pars <- c(4.9, 5.9, 7.0, 0.25, 0.05, 0.05, 0.5, 0.75, 0.13, 3.6)
+#names(pars) <- c("L","Cv","Dv","h","i","j","f","tv","q","TT")
 
-beta <- getbeta(R0t = jg_dat$Rt, pars = pars, p_age = dubpop$propage, CONTACTMATRIX = contacts_ireland)
-#beta <- getbeta(R0t = R0_int, pars = pars, p_age = dubpop$propage, CONTACTMATRIX = contacts_ireland)
+#beta <- getbeta(R0t = jg_dat$Rt, pars = pars, p_age = dubpop$propage, CONTACTMATRIX = contacts_ireland)
 
-plot(jg_dat$Beta[1:tmax], type = "l", lwd = 2)
-lines(beta[1:tmax], lwd = 2, col="red")
+#plot(jg_dat$Beta[1:tmax], type = "l", lwd = 2)
+#lines(beta[1:tmax], lwd = 2, col="red")
 
 ## Defining Model parameters (As list)
-parms <- list(L = 4.9,Cv = 5.9,Dv = 7.0,h = 0.25,i = 0.05,j = 0.05,f = 0.5,tv=0.75,
-              q = 0.13,TT = 3.6, beta = jg_dat$Beta, N_age = N_age, C = Avg_contacts)
+Beta <- read.csv("Data/JG_0.1_betas.csv")[,1]
+
+parms <- list(L = 4.9,Cv = 5.9,Dv = 7.0,h = 0.25,i = 0.05,j = 0.05,f = 0.5,tv = 0.75,
+              q = 0.13,TT = 3.6, timeframe =seq(0, floor(length(Beta)*0.1), by = 0.1),  
+              beta = Beta, N_age = N_age, C = Avg_contacts) 
+
 
 ## create a data frame for initial values (input must be a named vector, 
 ##                                         order the same as the order of the eqations,
 ##                                         required by solver)
 
-xstart <- c(c(N_age - num_inf - num_exp),# - num_rec), (N_age/4.9e6)
-            rep(num_exp, groups),#c(N_age/4.9e6),#rep(0, groups), #rep(num_exp, groups), #            
-            rep(num_inf, groups), #c(N_age/4.9e6),#
+xstart <- c(c(N_age - num_inf - num_exp),
+            rep(num_exp, groups),        
+            rep(num_inf, groups), 
             rep(0, groups),
             rep(0, groups),
             rep(0, groups),
@@ -206,30 +202,22 @@ R <- sol_out[grepl('R_',names(sol_out))]
 
 rowSums(sol_out[-1])
 
-plot(x = sol_out$time, jg_dat$Infected[1:tmax], lwd = 2, type = "l",
-       xlab ="Time(days)", ylab = "Daily no. of infections")
-lines((rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))), lwd = 2, col = "red")
+plot(jg_dat$Infected[1:tmax], lwd = 2, type = "l",
+     xlab ="Time(days)", ylab = "Daily no. of infections")
+lines(x = seq(sol_out$time)*dt, (rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))), lwd = 2, col = "red")
 legend(1, 20000,legend = c("JG's model", "Our Model"),
        col = c("black", "red"), bty = 'n',lty = c(1,1),lwd = c(2,2), cex = 1)
 
-#lines(xx, I, col = "blue", lwd = 2)
 
-plot(x = sol_out$time, jg_dat$Susceptible[1:tmax], type = "l", lwd = 2)
-lines(rowSums(S), col = "red", lwd = 2)
+plot(jg_dat$Susceptible[1:tmax], type = "l", lwd = 2)
+lines(x = seq(sol_out$time)*dt,rowSums(S), col = "red", lwd = 2)
 
-plot(x = sol_out$time, jg_dat$Recovered[1:tmax], type = "l", lwd = 2)
-lines(rowSums(R), col = "red", lwd = 2)
+plot(jg_dat$Recovered[1:tmax], type = "l", lwd = 2)
+lines(x = seq(sol_out$time)*dt, rowSums(R), col = "red", lwd = 2)
 
-plot(x = sol_out$time, jg_dat$Exposed[1:tmax], type = "l", lwd = 2)
-lines(rowSums(Ev), col = "red", lwd = 2)
+plot(jg_dat$Exposed[1:tmax], type = "l", lwd = 2)
+lines(x = seq(sol_out$time)*dt, rowSums(Ev), col = "red", lwd = 2)
 
-plot(abs(jg_dat$Infected[1:tmax] - (rowSums(cbind(Ip, IA, Ii,It,Iti,Iq)))), lwd = 2, type = "l")
-
-all.equal(jg_dat$Infected , (rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))))
-
-#plot(jg_dat$Infected[1:tmax], lwd = 2, type = "l")
-#xx <- seq_along(Ip[,1])*dt
-#lines(xx,(rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))), lwd = 2, col = "red")
 
 ################################################################################
 
@@ -256,21 +244,19 @@ R <- sol_out[grepl('R_',names(sol_out))]
 
 rowSums(sol_out[-1])
 
-plot(x = sol_out$time, jg_dat$Beta, type = "l", lwd = 2)
-lines(beta, lwd = 2, col="red")
-
-plot(x = sol_out$time, jg_dat$Infected, lwd = 2, type = "l")
-lines((rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))), lwd = 2, col = "red")
-#lines(xx, I, col = "blue", lwd = 2)
-
-plot(x = sol_out$time, jg_dat$Susceptible, type = "l", lwd = 2)
-lines(rowSums(S), col = "red", lwd = 2)
-
-plot(x = sol_out$time, jg_dat$Recovered, type = "l", lwd = 2)
-lines(rowSums(R), col = "red", lwd = 2)
-
-plot(abs(jg_dat$Infected - (rowSums(cbind(Ip, IA, Ii,It,Iti,Iq)))), lwd = 2, type = "l")
+plot(jg_dat$Infected[1:tmax], lwd = 2, type = "l",
+     xlab ="Time(days)", ylab = "Daily no. of infections")
+lines(x = seq(sol_out$time)*dt, (rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))), lwd = 2, col = "red")
+legend(1, 20000,legend = c("JG's model", "Our Model"),
+       col = c("black", "red"), bty = 'n',lty = c(1,1),lwd = c(2,2), cex = 1)
 
 
-all.equal(jg_dat$Infected , (rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))))
+plot(jg_dat$Susceptible[1:tmax], type = "l", lwd = 2)
+lines(x = seq(sol_out$time)*dt,rowSums(S), col = "red", lwd = 2)
+
+plot(jg_dat$Recovered[1:tmax], type = "l", lwd = 2)
+lines(x = seq(sol_out$time)*dt, rowSums(R), col = "red", lwd = 2)
+
+plot(jg_dat$Exposed[1:tmax], type = "l", lwd = 2)
+lines(x = seq(sol_out$time)*dt, rowSums(Ev), col = "red", lwd = 2)
 

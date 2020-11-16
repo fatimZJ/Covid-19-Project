@@ -1,21 +1,18 @@
+setwd("C:\\Users\\Admin\\Dropbox\\Covid\\Dublin\\Covid-19-Project")
+
 require(data.table)
 require(Matrix)
 require(matrixcalc)
 
-## load data: Wuhan's population age structure and Contact matrices
+## load data: Ireland's population age structure and Contact matrices
 
 loadPopData = TRUE
 loadContactMatrices = TRUE
-#loadCaseData =TRUE
-#loadR0posterior =TRUE
-
-
-## load data: Population age structure (currently using China's) and Contact matrices
 
 # 1) population data
 if(loadPopData) 
 { 
-  dubpop = read.csv("data/Ireland_pop.csv",as.is = TRUE)#'data/CoDubpop.csv',as.is = TRUE)
+  Irlpop = read.csv("data/Ireland_pop.csv",as.is = TRUE)#'data/Ireland_pop.csv')
 }
 
 # 2) (projected) contact matrices 
@@ -38,7 +35,9 @@ normalize.contact.matrices <- function(C, popv, make.sym = F){
   return(Cnorm)
 }
 
-# Synthetic contact matrices for China from Prem, Cook and Jit (2017) https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005697   
+# Synthetic contact matrices for Ireland from Prem, Cook and Jit (2017) 
+#https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005697   
+
 if(loadContactMatrices)
 {
   load(paste0('data/contacts_IRL.Rdata'))
