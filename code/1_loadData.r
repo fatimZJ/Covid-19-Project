@@ -1,4 +1,3 @@
-setwd("C:\\Users\\Admin\\Dropbox\\Covid\\Dublin\\Covid-19-Project")
 
 require(data.table)
 require(Matrix)

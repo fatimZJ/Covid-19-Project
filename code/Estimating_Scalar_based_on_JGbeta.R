@@ -122,9 +122,9 @@ R <- vector()
 Beta <- vector()
 
 for (t in 1: tmax) {
-R[t] <- getR0t(beta = step_beta[t], pars = pars, p_age = dubpop$propage, CONTACTMATRIX = contacts_ireland)
+R[t] <- getR0t(beta = step_beta[t], pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
 
-Beta[t] <- getbeta(R0t = R[t], pars = pars, p_age = dubpop$propage, CONTACTMATRIX = contacts_ireland)
+Beta[t] <- getbeta(R0t = R[t], pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
 
 }
 
@@ -134,8 +134,8 @@ Beta
 ################################################################################
 
 ## To get the our equivalent beta value- divide by the eigenvalue of the total average contact matrix
-Beta0 <- getbeta(R0t = 3.5, pars = pars, p_age = dubpop$propage, CONTACTMATRIX = contacts_ireland)
-p_age <- dubpop$propage
+Beta0 <- getbeta(R0t = 3.5, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
+p_age <- Irlpop$propage
 
 constraints <- list(home = diag(1,16,16),
            work = diag(1,16,16),
@@ -204,7 +204,7 @@ length(seq(1,225,by = 1))
 ################################################################################
 
 # To get the our equivalent beta value- divide by the eigenvalue of the total average contact matrix
-p_age <- dubpop$propage
+p_age <- Irlpop$propage
 
 Csym <- lapply(contacts_ireland, function(x, p_age) (x + t(x)*((p_age)%*%t(1/p_age)))/2, p_age) # make sure contacts are reciprocal
 

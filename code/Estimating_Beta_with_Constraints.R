@@ -144,9 +144,9 @@ if(t >= tRelaxIntervention5)
 }
 
 ## Estimating Beta
-R[t] <- getR0t(beta = jg_dat$Beta[1], constraints = CONSTRAINT, pars = pars, p_age = dubpop$propage, CONTACTMATRIX = contacts_ireland)
+R[t] <- getR0t(beta = jg_dat$Beta[1], constraints = CONSTRAINT, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
 
-Beta[t] <- getbeta(R0t = 3.4, pars = pars, p_age = dubpop$propage, CONTACTMATRIX = contacts_ireland)
+Beta[t] <- getbeta(R0t = 3.4, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
 
 }
 

@@ -1,3 +1,7 @@
+## Load packages
+library(deSolve)
+library(tidyverse)
+
 
 ## Load the data
 source('code/1_loadData.r')
@@ -24,33 +28,20 @@ jg_dat <- read.tcsv("data/dat_seir_code.csv")
 jg_dat$Date <- as.Date(jg_dat$Date, format = "%a %d %b %Y") # Reformat date column
 
 
-
 ## Load the get beta function
 source("code/getbeta.R")
 
-## Load packages
-library(deSolve)
-library(tidyverse)
-
-
 simulation_SEIR_model <- function(scalars,#R0t = 3.5,
-                                  #R0tpostoutbreak = 1.5,
-                                  #pWorkOpen = c(0.1,0.15,0.25,0.40,0.55,0.7), # pWorkOpen: proportion of the work force that is working (will be time-varying)
                                   dateStartSchoolClosure = as.Date('2020-03-12') , # Schools closed before Intense lockdown
                                   dateStartIntenseIntervention = as.Date('2020-03-27') , #Intense intervention: lockdown
                                   dateEndIntenseIntervention = as.Date('2020-05-18'), #date we begin relaxing intense intervention
                                   dateStart = as.Date('2020-02-28'), #start date for epidemic in Ireland
-                                  POP = dubpop,
+                                  POP = Irlpop,
                                   numWeekStagger = c(3,6,9,12,15),
                                   contacts_ireland = contacts,
-                                  #mean : c(1.00000000, 0.47475554, 0.10585644, 0.05415734, 
-                                  # 0.11484640, 0.20597092, 0.22342681, 0.19233676, 0.21364790)
-                                   #= #c(1.00000000, 0.47475554, 0.10585644, 0.05415734, 
-                                            #  0.11484640, 0.20597092, 0.22342681, 0.19233676, 
-                                             # 0.21364790),
-                                  beta = 0.1816126,
+                                  beta = 0.1816126, # The basic beta value 
                                   dt = 1,  # Time step (days)
-                                  tmax = 225 )  #nrow(jg_dat)              # Time horizon (days))   
+                                  tmax = 225)  #nrow(jg_dat) # Time horizon (days))   
 {
   
   ## Load population information
@@ -73,7 +64,7 @@ simulation_SEIR_model <- function(scalars,#R0t = 3.5,
   names(pars) <- c("L","Cv","Dv","h","i","j","f","tv","q","TT")
   
   ## Estimating Beta
-  Beta <-  beta#getbeta(R0t = R0t, pars = pars, p_age = dubpop$propage, CONTACTMATRIX = contacts_ireland)
+  Beta <-  beta#getbeta(R0t = R0t, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
   
   ## Defining time points at which interventions come in
   tStartSchoolClosure <- (as.vector(dateStartSchoolClosure - dateStart) + 1)#/dt #Time point to add the school closure effect
@@ -268,12 +259,12 @@ simulation_SEIR_model <- function(scalars,#R0t = 3.5,
   Iq <- sol_out[grepl('Iq_',names(sol_out))]
   R <- sol_out[grepl('R_',names(sol_out))]
   
-  #norm(abs(jg_dat$Infected[1:225]- ((rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))))[-1]), type = "2")#/jg_dat$Infected[1:225]
+  norm(abs(jg_dat$Infected[1:225]- ((rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))))[-1]), type = "2") #l2 norm
   
- sum((jg_dat$Infected[1:225]- ((rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))))[-1])^2)#/jg_dat$Infected[1:225]
+  #sum((jg_dat$Infected[1:225]- ((rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))))[-1])^2) #sum of squares
   
   
-  #sum(abs(jg_dat$Infected[1:225]- ((rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))))[-1]))
+  #sum(abs(jg_dat$Infected[1:225]- ((rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))))[-1])) #l1 norm
   
 }
 
@@ -284,7 +275,7 @@ ests <- nlm(simulation_SEIR_model,(c(1.10500000, 0.48585554, 0.1040644, 0.038057
     dateStartIntenseIntervention = as.Date('2020-03-27') , #Intense intervention: starts at Wuhan Lockdown
     dateEndIntenseIntervention = as.Date('2020-05-18'), #date we begin relaxing intense intervention
     dateStart = as.Date('2020-02-28'), #start date for epidemic in Ireland
-    POP = dubpop,
+    POP = Irlpop,
     numWeekStagger = c(3,6,9,12,15),
     contacts_ireland = contacts,
     dt = 1,

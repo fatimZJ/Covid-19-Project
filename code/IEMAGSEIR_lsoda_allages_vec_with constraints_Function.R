@@ -71,7 +71,7 @@ simulation_SEIR_model <- function(R0t = 3.5,
                       dateStartIntenseIntervention = as.Date('2020-03-27') , #Intense intervention: lockdown
                       dateEndIntenseIntervention = as.Date('2020-05-18'), #date we begin relaxing intense intervention
                       dateStart = as.Date('2020-02-28'), #start date for epidemic in Ireland
-                      POP = dubpop,
+                      POP = Irlpop,
                       numWeekStagger = c(3,6,9,12,15),
                       contacts_ireland = contacts,
                       dt = 1,  # Time step (days)
@@ -98,7 +98,7 @@ simulation_SEIR_model <- function(R0t = 3.5,
   names(pars) <- c("L","Cv","Dv","h","i","j","f","tv","q","TT")
   
   ## Estimating Beta
-  Beta <- getbeta(R0t = R0t, pars = pars, p_age = dubpop$propage, CONTACTMATRIX = contacts_ireland)
+  Beta <- getbeta(R0t = R0t, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
   
   ## Defining time points at which interventions come in
   tStartSchoolClosure = as.vector(dateStartSchoolClosure - dateStart)+1 #Time point to add the school closure effect
@@ -311,7 +311,7 @@ Base <- simulation_SEIR_model(R0t = 3.65,
                       dateStartIntenseIntervention = as.Date('2020-03-27') , #Intense intervention: starts at Wuhan Lockdown
                       dateEndIntenseIntervention = as.Date('2020-05-18'), #date we begin relaxing intense intervention
                       dateStart = as.Date('2020-02-28'), #start date for epidemic in Ireland
-                      POP = dubpop,
+                      POP = Irlpop,
                       numWeekStagger = c(3,6,9,12,15),
                       contacts_ireland = contacts,
                       pWorkOpen = c(0.1,0.15,0.25,0.40,0.55,0.7),
@@ -323,7 +323,7 @@ doNothing <- simulation_SEIR_model(R0t = 3.65,
                                       dateStartIntenseIntervention = as.Date('2020-03-10') , #Intense intervention: starts at Wuhan Lockdown
                                       dateEndIntenseIntervention = as.Date('2020-05-10'), #date we begin relaxing intense intervention
                                       dateStart = as.Date('2020-02-28'), #start date for epidemic in Ireland
-                                      POP = dubpop,
+                                      POP = Irlpop,
                                       numWeekStagger = c(0,0,0,0,0),
                                       contacts_ireland = contacts,
                                       pWorkOpen = c(1,1,1,1,1,1),
