@@ -103,7 +103,7 @@ SEIR_model <- function (t, x, params) {
 }
 
 ## Load population information
-POP <- dubpop
+POP <- Irlpop
 
 ## Fix population
 Nv <- sum(POP$popage)
@@ -141,7 +141,7 @@ length(times)
 #pars <- c(4.9, 5.9, 7.0, 0.25, 0.05, 0.05, 0.5, 0.75, 0.13, 3.6)
 #names(pars) <- c("L","Cv","Dv","h","i","j","f","tv","q","TT")
 
-#beta <- getbeta(R0t = jg_dat$Rt, pars = pars, p_age = dubpop$propage, CONTACTMATRIX = contacts_ireland)
+#beta <- getbeta(R0t = jg_dat$Rt, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
 
 #plot(jg_dat$Beta[1:tmax], type = "l", lwd = 2)
 #lines(beta[1:tmax], lwd = 2, col="red")

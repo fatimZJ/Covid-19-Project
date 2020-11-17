@@ -85,7 +85,7 @@ simulateOutbreakSEIcIscR = function(R0t = 3.5,
                                     R0tpostoutbreak = 1.5,
                                     pWorkOpen = c(0.1,0.25,0.5,0.9), # pWorkOpen: proportion of the work force that is working (will be time-varying)
                                     dateStartSchoolClosure = as.Date('2020-03-12') , # cause winter term break 
-                                    dateStartIntenseIntervention = as.Date('2020-03-27') , #Intense intervention: starts at Wuhan Lockdown
+                                    dateStartIntenseIntervention = as.Date('2020-03-27') , #Intense intervention: lockdown
                                     dateEndIntenseIntervention = as.Date('2020-05-18'), #date we begin relaxing intense intervention 
                                     dateStart = as.Date('2020-02-28'),
                                     POP = dubpop,
