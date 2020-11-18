@@ -44,6 +44,7 @@ simulation_SEIR_model <- function(scalars,#R0t = 3.5,
                                   tmax = 225)  #nrow(jg_dat) # Time horizon (days))   
 {
   
+  scalars <- exp(scalars)
   ## Load population information
   p_age <- POP$propage
   N_age <- POP$popage
@@ -64,7 +65,7 @@ simulation_SEIR_model <- function(scalars,#R0t = 3.5,
   names(pars) <- c("L","Cv","Dv","h","i","j","f","tv","q","TT")
   
   ## Estimating Beta
-  Beta <-  beta#getbeta(R0t = R0t, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
+  Beta <-  beta #getbeta(R0t = R0t, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
   
   ## Defining time points at which interventions come in
   tStartSchoolClosure <- (as.vector(dateStartSchoolClosure - dateStart) + 1)#/dt #Time point to add the school closure effect
@@ -117,7 +118,7 @@ simulation_SEIR_model <- function(scalars,#R0t = 3.5,
   #t= 1
   #x = xstart
   #params = parms
-  SEIR_model <- function (t, x, params) {
+  SEIR_model <- function (t, x, parms) {
     x <- as_vector(x)
     #browser()
     # Initialise the time-dependent variables
@@ -268,9 +269,9 @@ simulation_SEIR_model <- function(scalars,#R0t = 3.5,
   
 }
 
-ests <- nlm(simulation_SEIR_model,(c(1.10500000, 0.48585554, 0.1040644, 0.03805734,
+ests <- nlm(simulation_SEIR_model,log(c(1.10500000, 0.48585554, 0.1040644, 0.03805734,
                                        0.11084640, 0.20197092, 0.22342681, 0.18233676,
-                                       0.21364790)),
+                                       0.21364790)), stepmax = 0.5,
     dateStartSchoolClosure = as.Date('2020-03-12') , #schools closed before imtense lockdown
     dateStartIntenseIntervention = as.Date('2020-03-27') , #Intense intervention: starts at Wuhan Lockdown
     dateEndIntenseIntervention = as.Date('2020-05-18'), #date we begin relaxing intense intervention

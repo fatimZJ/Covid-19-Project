@@ -38,7 +38,7 @@ library(deSolve)
 library(tidyverse)
 #x <- xstart
 #t = 1
-SEIR_model <- function (t, x, params) {
+SEIR_model <- function (t, x, parms) {
   x <- as_vector(x)
   #browser()
   # Initialise the time-dependent variables

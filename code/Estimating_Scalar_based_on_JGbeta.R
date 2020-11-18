@@ -150,17 +150,38 @@ C <- constraints[[1]]%*%Csym[[1]]+
   constraints[[4]]%*%Csym[[4]]
 
 n <- dim(C)[1]
-M = C
+M <- C
 for(i in 1:n)
 {
   for(j in 1:n){
     M[i,j] = C[i,j]*p_age[i]/p_age[j]
   }
 }
-eig = eigen(M)
+eig <- eigen(M)
 
 
 beta_C <- Beta/max(Re(eig$values))
+
+max(Re(eig$values))
+
+max(Re(eigen(C)$values))
+
+max(Re(eigen(contacts_ireland[[5]])$values))
+
+all.equal(eigen(C)$vectors, eig$vectors)
+all.equal(eigen(C)$values, eig$values)
+
+all.equal(contacts_ireland[[5]], Csym[[5]])
+
+contacts_ireland[[5]][1,2] %*% as.matrix(Irlpop$popage[2])
+
+contacts_ireland[[5]][2,1] %*% as.matrix(Irlpop$popage[1])
+
+
+Csym[[5]][1,2] %*% as.matrix(Irlpop$popage[2])
+
+Csym[[5]][2,1] %*% as.matrix(Irlpop$popage[1])
+
 
 ################################################################################
 

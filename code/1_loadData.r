@@ -11,7 +11,7 @@ loadContactMatrices = TRUE
 # 1) population data
 if(loadPopData) 
 { 
-  Irlpop = read.csv("data/Ireland_pop.csv",as.is = TRUE)#'data/Ireland_pop.csv')
+  Irlpop = read.csv("data/Ireland_pop_2019.csv",as.is = TRUE)#'data/Ireland_pop.csv')
 }
 
 # 2) (projected) contact matrices 

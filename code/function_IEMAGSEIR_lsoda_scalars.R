@@ -73,7 +73,7 @@ simulation_SEIR_model <- function(R0t = 3.5,
   names(pars) <- c("L","Cv","Dv","h","i","j","f","tv","q","TT")
   
   ## Estimating Beta
-  Beta <-  getbeta(R0t = R0t, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
+  Beta <-  beta#getbeta(R0t = R0t, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
   
   ## Defining time points at which interventions come in
   tStartSchoolClosure <- (as.vector(dateStartSchoolClosure - dateStart) + 1)#/dt #Time point to add the school closure effect
@@ -126,7 +126,7 @@ simulation_SEIR_model <- function(R0t = 3.5,
   #t= 1
   #x = xstart
   #params = parms
-  SEIR_model <- function (t, x, params) {
+  SEIR_model <- function (t, x, parms) {
     x <- as_vector(x)
     #browser()
     # Initialise the time-dependent variables
@@ -287,6 +287,8 @@ Base <- simulation_SEIR_model(R0t = 3.4,
                               POP = Irlpop,
                               numWeekStagger = c(3,6,9,12,15),
                               contacts_ireland = contacts,
+                              scalars = c(1.10233162, 0.49031872, 0.10325630, 0.03780625, 0.11139420, 0.20539652, 0.22703778,
+                                          0.17883774, 0.22092837), # l2 norm for 2019 pop
                               #scalars = c(1.10500000, 0.48585554, 0.1040644, 0.03805734, 
                               #            0.11084640, 0.20197092, 0.22342681, 0.18233676, 
                               #            0.21364790), # eyeballing
@@ -294,7 +296,7 @@ Base <- simulation_SEIR_model(R0t = 3.4,
                               #             0.20597092, 0.22342681, 0.19233676, 0.21364790), # mean
                               #scalars = c(1.10818408, 0.49976939, 0.09862990, 0.02386853, 0.12563219,
                               #            0.22234443, 0.23553819, 0.17246404, 0.22153177), #nlm- MINIMISING 
-                       
+                              
                               #scalars = c(1.10089734, 0.48037416, 0.10962627, 0.03964821, 
                               #            0.11200476, 0.20279881, 0.22446892,
                               #            0.18350595, 0.21570926),
@@ -303,17 +305,17 @@ Base <- simulation_SEIR_model(R0t = 3.4,
                               #            0.12972868, 0.24328934,
                               #            0.26115274, 0.21996134, 0.25087005),
                               #beta = 0.157146834, # median
-                              scalars = c(2.095174179, 1.155298739, 0.214862956, 0.002120975, 0.364243360, 0.412442083,
-                                          0.522297679, 0.345276826, 0.464977006),
-                                
-                                #c(1.107055167,  0.487316332,  0.104007386, -0.005207935,  0.129421087,  0.255765661,
-                                         #   0.269242446,  0.163730219,  0.223099908), 
+                              #scalars = c(2.095174179, 1.155298739, 0.214862956, 0.002120975, 0.364243360, 0.412442083,
+                              #           0.522297679, 0.345276826, 0.464977006),
+                              
+                              #c(1.107055167,  0.487316332,  0.104007386, -0.005207935,  0.129421087,  0.255765661,
+                              #   0.269242446,  0.163730219,  0.223099908), 
                               #scalars = c(1.11217223, 0.49950660, 0.09833200, 0.02283614, 0.12810131, 0.22134800, 0.23640592,
-                               #           0.17139463, 0.22196476),
-                                # c(1.110222, 0.4969624, 0.09948029, 0.02131537, 0.1295941, 0.2204802, 0.2356415,
-                                        #  0.1732724, 0.2207442), #optimx L1 norm
-                                #c(1.009193, 0.5516756, 0.1030537,  0, 0.15526, 
-                               # 0.230071, 0.2424154, 0.1673028, 0.2226798), # optimx minimising the l2 norm
+                              #           0.17139463, 0.22196476),
+                              # c(1.110222, 0.4969624, 0.09948029, 0.02131537, 0.1295941, 0.2204802, 0.2356415,
+                              #  0.1732724, 0.2207442), #optimx L1 norm
+                              #c(1.009193, 0.5516756, 0.1030537,  0, 0.15526, 
+                              # 0.230071, 0.2424154, 0.1673028, 0.2226798), # optimx minimising the l2 norm
                               dt = 1,  
                               tmax = 225 ) #medians
 # 
