@@ -1,29 +1,6 @@
 
 ## Load the data
 source('code/1_loadData.r')
-## Adapted from https://gist.github.com/jonocarroll/b17ce021b0637a31f584ed08a1fbe733
-read.tcsv = function(file, header=TRUE, sep=",", ...) {
-  
-  n = max(count.fields(file, sep=sep), na.rm=TRUE)
-  x = readLines(file)[-1]
-  
-  .splitvar = function(x, sep, n) {
-    var = unlist(strsplit(x, split=sep))
-    length(var) = n
-    return(var)
-  }
-  
-  x = do.call(cbind, lapply(x, .splitvar, sep=sep, n=n))
-  x = apply(x, 1, paste, collapse=sep)
-  ## empty strings are converted to NA
-  out = read.csv(text=x, sep=sep, header=header, na.strings = "", ...)
-  return(out)
-}
-
-jg_dat <- read.tcsv("data/dat_seir_code.csv")
-jg_dat$Date <- as.Date(jg_dat$Date, format = "%a %d %b %Y") # Reformat date column
-
-
 
 ## Load the get beta function
 source("code/getbeta.R")
@@ -311,6 +288,29 @@ It <- Base$sol_out[grepl('It_',names(Base$sol_out))]
 Iti <- Base$sol_out[grepl('Iti_',names(Base$sol_out))]
 Iq <- Base$sol_out[grepl('Iq_',names(Base$sol_out))]
 R <- Base$sol_out[grepl('R_',names(Base$sol_out))]
+
+## Adapted from https://gist.github.com/jonocarroll/b17ce021b0637a31f584ed08a1fbe733
+read.tcsv = function(file, header=TRUE, sep=",", ...) {
+  
+  n = max(count.fields(file, sep=sep), na.rm=TRUE)
+  x = readLines(file)[-1]
+  
+  .splitvar = function(x, sep, n) {
+    var = unlist(strsplit(x, split=sep))
+    length(var) = n
+    return(var)
+  }
+  
+  x = do.call(cbind, lapply(x, .splitvar, sep=sep, n=n))
+  x = apply(x, 1, paste, collapse=sep)
+  ## empty strings are converted to NA
+  out = read.csv(text=x, sep=sep, header=header, na.strings = "", ...)
+  return(out)
+}
+
+jg_dat <- read.tcsv("data/dat_seir_code.csv")
+jg_dat$Date <- as.Date(jg_dat$Date, format = "%a %d %b %Y") # Reformat date column
+
 
 
 plot(jg_dat$Infected[1:225], type = "l", lwd = 2, xlab ="Time(days)",
