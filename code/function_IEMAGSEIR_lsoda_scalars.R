@@ -33,7 +33,7 @@ library(deSolve)
 library(tidyverse)
 
 
-simulation_SEIR_model <- function(R0t = 3.5,
+simulation_SEIR_model <- function(R0t = 3.4,
                                   #R0tpostoutbreak = 1.5,
                                   #pWorkOpen = c(0.1,0.15,0.25,0.40,0.55,0.7), # pWorkOpen: proportion of the work force that is working (will be time-varying)
                                   dateStartSchoolClosure = as.Date('2020-03-12') , # Schools closed before Intense lockdown
@@ -50,7 +50,7 @@ simulation_SEIR_model <- function(R0t = 3.5,
                                               0.21364790),
                                   beta = 0.1816126,
                                   dt = 1,  # Time step (days)
-                                  tmax = 225 )  #nrow(jg_dat)              # Time horizon (days))   
+                                  tmax = 225 )  #nrow(jg_dat)         # Time horizon (days))   
 {
   
   ## Load population information
@@ -221,8 +221,9 @@ simulation_SEIR_model <- function(R0t = 3.5,
       CONSTRAINT  <- diag(INTERVENTION,16,16)
     }
     
-    print(INTERVENTION)
-    print(t)
+    #print(INTERVENTION)
+    #print(t)
+    
     # total contacts matrix (work + school + household + other)
     C <- CONSTRAINT%*%contacts_ireland[[5]]
     
