@@ -73,17 +73,17 @@ simulation_SEIR_model <- function(R0t = 3.4,
   names(pars) <- c("L","Cv","Dv","h","i","j","f","tv","q","TT")
   
   ## Estimating Beta
-  Beta <-  beta#getbeta(R0t = R0t, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
+  Beta <-  beta #getbeta(R0t = R0t, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
   
   ## Defining time points at which interventions come in
-  tStartSchoolClosure <- (as.vector(dateStartSchoolClosure - dateStart) + 1)#/dt #Time point to add the school closure effect
-  tStartIntenseIntervention <- (as.vector(dateStartIntenseIntervention - dateStart) + 1)#/dt  #Time point to add the intense lockdown effect
-  tEndIntenseIntervention <- (as.vector(dateEndIntenseIntervention - dateStart) + 1)#/dt     
-  tRelaxIntervention1 <- tEndIntenseIntervention + (numWeekStagger[1]*7)#/dt                               
-  tRelaxIntervention2 <- tEndIntenseIntervention + (numWeekStagger[2]*7)#/dt                               
-  tRelaxIntervention3 <- tEndIntenseIntervention + (numWeekStagger[3]*7)#/dt
-  tRelaxIntervention4 <- tEndIntenseIntervention + (numWeekStagger[4]*7)#/dt                               
-  tRelaxIntervention5 <- tEndIntenseIntervention + (numWeekStagger[5]*7)#/dt                              
+  tStartSchoolClosure <- (as.vector(dateStartSchoolClosure - dateStart) + 1) #Time point to add the school closure effect
+  tStartIntenseIntervention <- (as.vector(dateStartIntenseIntervention - dateStart) + 1)#Time point to add the intense lockdown effect
+  tEndIntenseIntervention <- (as.vector(dateEndIntenseIntervention - dateStart) + 1)     
+  tRelaxIntervention1 <- tEndIntenseIntervention + (numWeekStagger[1]*7)                               
+  tRelaxIntervention2 <- tEndIntenseIntervention + (numWeekStagger[2]*7)                               
+  tRelaxIntervention3 <- tEndIntenseIntervention + (numWeekStagger[3]*7)
+  tRelaxIntervention4 <- tEndIntenseIntervention + (numWeekStagger[4]*7)                              
+  tRelaxIntervention5 <- tEndIntenseIntervention + (numWeekStagger[5]*7)                              
   
   ## defining all parameters required for solving model equations
   parms <- list(L = pars["L"],Cv = pars["Cv"],Dv =  pars["Dv"],h = pars["h"],
@@ -123,9 +123,7 @@ simulation_SEIR_model <- function(R0t = 3.4,
                      paste0('Iq_',1:groups),
                      paste0('R_',1:groups))
   
-  #t= 1
-  #x = xstart
-  #params = parms
+## Define the model for lsoda
   SEIR_model <- function (t, x, parms) {
     x <- as_vector(x)
     #browser()
