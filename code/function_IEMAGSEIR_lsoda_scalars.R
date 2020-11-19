@@ -1,29 +1,6 @@
 
 ## Load the data
 source('code/1_loadData.r')
-## Adapted from https://gist.github.com/jonocarroll/b17ce021b0637a31f584ed08a1fbe733
-read.tcsv = function(file, header=TRUE, sep=",", ...) {
-  
-  n = max(count.fields(file, sep=sep), na.rm=TRUE)
-  x = readLines(file)[-1]
-  
-  .splitvar = function(x, sep, n) {
-    var = unlist(strsplit(x, split=sep))
-    length(var) = n
-    return(var)
-  }
-  
-  x = do.call(cbind, lapply(x, .splitvar, sep=sep, n=n))
-  x = apply(x, 1, paste, collapse=sep)
-  ## empty strings are converted to NA
-  out = read.csv(text=x, sep=sep, header=header, na.strings = "", ...)
-  return(out)
-}
-
-jg_dat <- read.tcsv("data/dat_seir_code.csv")
-jg_dat$Date <- as.Date(jg_dat$Date, format = "%a %d %b %Y") # Reformat date column
-
-
 
 ## Load the get beta function
 source("code/getbeta.R")
@@ -33,7 +10,7 @@ library(deSolve)
 library(tidyverse)
 
 
-simulation_SEIR_model <- function(R0t = 3.5,
+simulation_SEIR_model <- function(R0t = 3.4,
                                   #R0tpostoutbreak = 1.5,
                                   #pWorkOpen = c(0.1,0.15,0.25,0.40,0.55,0.7), # pWorkOpen: proportion of the work force that is working (will be time-varying)
                                   dateStartSchoolClosure = as.Date('2020-03-12') , # Schools closed before Intense lockdown
@@ -43,14 +20,11 @@ simulation_SEIR_model <- function(R0t = 3.5,
                                   POP = Irlpop,
                                   numWeekStagger = c(3,6,9,12,15),
                                   contacts_ireland = contacts,
-                                  #mean : c(1.00000000, 0.47475554, 0.10585644, 0.05415734, 
-                                  # 0.11484640, 0.20597092, 0.22342681, 0.19233676, 0.21364790)
-                                  scalars = c(1.00000000, 0.47475554, 0.10585644, 0.05415734, 
-                                              0.11484640, 0.20597092, 0.22342681, 0.19233676, 
-                                              0.21364790),
+                                  scalars = c(1.10233162, 0.49031872, 0.10325630, 0.03780625, 0.11139420, 0.20539652, 0.22703778,
+                                              0.17883774, 0.22092837),
                                   beta = 0.1816126,
                                   dt = 1,  # Time step (days)
-                                  tmax = 225 )  #nrow(jg_dat)              # Time horizon (days))   
+                                  tmax = 225 )  #nrow(jg_dat)         # Time horizon (days))   
 {
   
   ## Load population information
@@ -73,17 +47,17 @@ simulation_SEIR_model <- function(R0t = 3.5,
   names(pars) <- c("L","Cv","Dv","h","i","j","f","tv","q","TT")
   
   ## Estimating Beta
-  Beta <-  beta#getbeta(R0t = R0t, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
+  Beta <-  beta #getbeta(R0t = R0t, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
   
   ## Defining time points at which interventions come in
-  tStartSchoolClosure <- (as.vector(dateStartSchoolClosure - dateStart) + 1)#/dt #Time point to add the school closure effect
-  tStartIntenseIntervention <- (as.vector(dateStartIntenseIntervention - dateStart) + 1)#/dt  #Time point to add the intense lockdown effect
-  tEndIntenseIntervention <- (as.vector(dateEndIntenseIntervention - dateStart) + 1)#/dt     
-  tRelaxIntervention1 <- tEndIntenseIntervention + (numWeekStagger[1]*7)#/dt                               
-  tRelaxIntervention2 <- tEndIntenseIntervention + (numWeekStagger[2]*7)#/dt                               
-  tRelaxIntervention3 <- tEndIntenseIntervention + (numWeekStagger[3]*7)#/dt
-  tRelaxIntervention4 <- tEndIntenseIntervention + (numWeekStagger[4]*7)#/dt                               
-  tRelaxIntervention5 <- tEndIntenseIntervention + (numWeekStagger[5]*7)#/dt                              
+  tStartSchoolClosure <- (as.vector(dateStartSchoolClosure - dateStart) + 1) #Time point to add the school closure effect
+  tStartIntenseIntervention <- (as.vector(dateStartIntenseIntervention - dateStart) + 1)#Time point to add the intense lockdown effect
+  tEndIntenseIntervention <- (as.vector(dateEndIntenseIntervention - dateStart) + 1)     
+  tRelaxIntervention1 <- tEndIntenseIntervention + (numWeekStagger[1]*7)                               
+  tRelaxIntervention2 <- tEndIntenseIntervention + (numWeekStagger[2]*7)                               
+  tRelaxIntervention3 <- tEndIntenseIntervention + (numWeekStagger[3]*7)
+  tRelaxIntervention4 <- tEndIntenseIntervention + (numWeekStagger[4]*7)                              
+  tRelaxIntervention5 <- tEndIntenseIntervention + (numWeekStagger[5]*7)                              
   
   ## defining all parameters required for solving model equations
   parms <- list(L = pars["L"],Cv = pars["Cv"],Dv =  pars["Dv"],h = pars["h"],
@@ -123,9 +97,7 @@ simulation_SEIR_model <- function(R0t = 3.5,
                      paste0('Iq_',1:groups),
                      paste0('R_',1:groups))
   
-  #t= 1
-  #x = xstart
-  #params = parms
+## Define the model for lsoda
   SEIR_model <- function (t, x, parms) {
     x <- as_vector(x)
     #browser()
@@ -221,8 +193,9 @@ simulation_SEIR_model <- function(R0t = 3.5,
       CONSTRAINT  <- diag(INTERVENTION,16,16)
     }
     
-    print(INTERVENTION)
-    print(t)
+    #print(INTERVENTION)
+    #print(t)
+    
     # total contacts matrix (work + school + household + other)
     C <- CONSTRAINT%*%contacts_ireland[[5]]
     
@@ -258,8 +231,6 @@ simulation_SEIR_model <- function(R0t = 3.5,
   
   sol_out <- as.data.frame(sol)
   
-  
-  
   output = list( sol_out = sol_out, N_age = N_age, R0t = R0t, beta = beta,
                  dateStart = dateStart, dateEnd = dateEnd,
                  dateStartIntenseIntervention = dateStartIntenseIntervention, 
@@ -278,7 +249,9 @@ simulation_SEIR_model <- function(R0t = 3.5,
   
 }
 
+Test <- FALSE
 
+if (Test) {
 Base <- simulation_SEIR_model(R0t = 3.4,
                               dateStartSchoolClosure = as.Date('2020-03-12') , #schools closed before imtense lockdown
                               dateStartIntenseIntervention = as.Date('2020-03-27') , #Intense intervention: starts at Wuhan Lockdown
@@ -289,51 +262,9 @@ Base <- simulation_SEIR_model(R0t = 3.4,
                               contacts_ireland = contacts,
                               scalars = c(1.10233162, 0.49031872, 0.10325630, 0.03780625, 0.11139420, 0.20539652, 0.22703778,
                                           0.17883774, 0.22092837), # l2 norm for 2019 pop
-                              #scalars = c(1.10500000, 0.48585554, 0.1040644, 0.03805734, 
-                              #            0.11084640, 0.20197092, 0.22342681, 0.18233676, 
-                              #            0.21364790), # eyeballing
-                              # scalars = c(1.00000000, 0.47475554, 0.10585644, 0.05415734, 0.11484640,
-                              #             0.20597092, 0.22342681, 0.19233676, 0.21364790), # mean
-                              #scalars = c(1.10818408, 0.49976939, 0.09862990, 0.02386853, 0.12563219,
-                              #            0.22234443, 0.23553819, 0.17246404, 0.22153177), #nlm- MINIMISING 
-                              
-                              #scalars = c(1.10089734, 0.48037416, 0.10962627, 0.03964821, 
-                              #            0.11200476, 0.20279881, 0.22446892,
-                              #            0.18350595, 0.21570926),
-                              
-                              #scalars = c(1.00000000, 0.54412342, 0.09812348 ,0.06021849,
-                              #            0.12972868, 0.24328934,
-                              #            0.26115274, 0.21996134, 0.25087005),
-                              #beta = 0.157146834, # median
-                              #scalars = c(2.095174179, 1.155298739, 0.214862956, 0.002120975, 0.364243360, 0.412442083,
-                              #           0.522297679, 0.345276826, 0.464977006),
-                              
-                              #c(1.107055167,  0.487316332,  0.104007386, -0.005207935,  0.129421087,  0.255765661,
-                              #   0.269242446,  0.163730219,  0.223099908), 
-                              #scalars = c(1.11217223, 0.49950660, 0.09833200, 0.02283614, 0.12810131, 0.22134800, 0.23640592,
-                              #           0.17139463, 0.22196476),
-                              # c(1.110222, 0.4969624, 0.09948029, 0.02131537, 0.1295941, 0.2204802, 0.2356415,
-                              #  0.1732724, 0.2207442), #optimx L1 norm
-                              #c(1.009193, 0.5516756, 0.1030537,  0, 0.15526, 
-                              # 0.230071, 0.2424154, 0.1673028, 0.2226798), # optimx minimising the l2 norm
-                              dt = 1,  
-                              tmax = 225 ) #medians
-# 
-# Base_dt1 <- simulation_SEIR_model(R0t = 3.65,
-#                               dateStartSchoolClosure = as.Date('2020-03-12') , #schools closed before imtense lockdown
-#                               dateStartIntenseIntervention = as.Date('2020-03-27') , #Intense intervention: starts at Wuhan Lockdown
-#                               dateEndIntenseIntervention = as.Date('2020-05-18'), #date we begin relaxing intense intervention
-#                               dateStart = as.Date('2020-02-28'), #start date for epidemic in Ireland
-#                               POP = Irlpop,
-#                               numWeekStagger = c(3,6,9,12,15),
-#                               contacts_ireland = contacts,
-#                               scalars = c(1.00000000, 0.47475554, 0.10585644, 0.05415734, 
-#                                           0.11484640, 0.20597092, 0.22342681, 0.19233676, 
-#                                           0.21364790),
-#                               dt = 1,  
-#                               tmax = 225 ) 
-# 
-# 
+                              dt = 0.1,  
+                              tmax = 225 ) 
+
 # doNothing <- simulation_SEIR_model(R0t = 3.65,
 #                                    dateStartSchoolClosure = as.Date('2020-03-10') , #schools closed before imtense lockdown
 #                                    dateStartIntenseIntervention = as.Date('2020-03-10') , #Intense intervention: starts at Wuhan Lockdown
@@ -358,72 +289,28 @@ Iti <- Base$sol_out[grepl('Iti_',names(Base$sol_out))]
 Iq <- Base$sol_out[grepl('Iq_',names(Base$sol_out))]
 R <- Base$sol_out[grepl('R_',names(Base$sol_out))]
 
-# S1 <- Base_dt1$sol_out[grepl('S_',names(Base_dt1$sol_out))]
-# Ev1 <- Base_dt1$sol_out[grepl('Ev_',names(Base_dt1$sol_out))]
-# Ip1 <- Base_dt1$sol_out[grepl('Ip_',names(Base_dt1$sol_out))]
-# IA1 <- Base_dt1$sol_out[grepl('IA_',names(Base_dt1$sol_out))]
-# Ii1 <- Base_dt1$sol_out[grepl('Ii_',names(Base_dt1$sol_out))]
-# It1 <- Base_dt1$sol_out[grepl('It_',names(Base_dt1$sol_out))]
-# Iti1 <- Base_dt1$sol_out[grepl('Iti_',names(Base_dt1$sol_out))]
-# Iq1 <- Base_dt1$sol_out[grepl('Iq_',names(Base_dt1$sol_out))]
-# R1 <- Base_dt1$sol_out[grepl('R_',names(Base_dt1$sol_out))]
-# 
-# plot(Base$sol_out$time,(rowSums(cbind(Ip1, IA1, Ii1,It1,Iti1,Iq1))),lwd=2, type = "l",
-#      xlab="Time(days)", ylab="Daily no. of infections",# log = "y",
-#      panel.first = rect(c(Base$tStartSchoolClosure, Base$tStartIntenseIntervention,Base$tEndIntenseIntervention,
-#                           Base$tRelaxIntervention1, Base$tRelaxIntervention2,Base$tRelaxIntervention3,
-#                           Base$tRelaxIntervention4), -1e6,
-#                         c(Base$tStartIntenseIntervention,Base$tEndIntenseIntervention, Base$tRelaxIntervention1,
-#                           Base$tRelaxIntervention2,Base$tRelaxIntervention3,
-#                           Base$tRelaxIntervention4,Base$tRelaxIntervention5 ), 1e6,
-#                         col=c('gray63','gray48', 'gray70', 'gray75','gray80','gray85', 'gray90'), border=NA));
-# lines(Base$sol_out$time, (rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))),lwd=2,col='tomato')
-# 
-# 
-# plot(Base$sol_out$time,(rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))), lwd = 2, type = "l",
-#      xlab ="Time(days)", ylab = "Daily no. of infections",
-#      panel.first = rect(c(Base$tStartSchoolClosure, Base$tStartIntenseIntervention,
-#                           Base$tEndIntenseIntervention,
-#                           Base$tRelaxIntervention1, Base$tRelaxIntervention2,
-#                           Base$tRelaxIntervention3,
-#                           Base$tRelaxIntervention4), -1e10,
-#                         c(Base$tStartIntenseIntervention,Base$tEndIntenseIntervention,
-#                           Base$tRelaxIntervention1,
-#                           Base$tRelaxIntervention2,Base$tRelaxIntervention3,
-#                           Base$tRelaxIntervention4,Base$tRelaxIntervention5), 1e10,
-#                         col=c('gray63','gray48', 'gray65', 'gray75','gray80','gray85', 'gray90'), border=NA))
-# 
-# 
-# plot(Base_dt1$sol_out$time,(rowSums(cbind(Ip1, IA1, Ii1,It1,Iti1,Iq1))),lwd=2, type = "l",
-#      xlab="Time(days)", ylab="Daily no. of infections",# log = "y",
-#      panel.first = rect(c(Base$tStartSchoolClosure, Base$tStartIntenseIntervention,
-#                           Base$tEndIntenseIntervention,
-#                           Base$tRelaxIntervention1, Base$tRelaxIntervention2,
-#                           Base$tRelaxIntervention3,
-#                           Base$tRelaxIntervention4), -1e10,
-#                         c(Base$tStartIntenseIntervention,Base$tEndIntenseIntervention,
-#                           Base$tRelaxIntervention1,
-#                           Base$tRelaxIntervention2,Base$tRelaxIntervention3,
-#                           Base$tRelaxIntervention4,Base$tRelaxIntervention5), 1e10,
-#                         col=c('gray63','gray48', 'gray65', 'gray75','gray80','gray85', 'gray90'), border=NA))
-# 
-# 
-# lines(Base$sol_out$time, (rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))),lwd=2,col='tomato')
-# 
-# 
-# agegp = 8
-# #dt = 0.1
-# plot(Base$sol_out$time, (rowSums(cbind(Ip[,agegp], IA[,agegp], Ii[,agegp],
-#                                               It[,agegp],Iti[,agegp],Iq[,agegp]))),lwd=2,col='tomato',
-#      type = "l", main=paste0("Incidence for age [",(agegp-1)*5,',',agegp*5,')'),
-#      xlab="Time(days)", ylab="Daily no. of infections",
-#      panel.first = rect(c(Base$tStartSchoolClosure, Base$tStartIntenseIntervention,Base$tEndIntenseIntervention,
-#                           Base$tRelaxIntervention1, Base$tRelaxIntervention2,Base$tRelaxIntervention3,
-#                           Base$tRelaxIntervention4), -1e6,
-#                         c(Base$tStartIntenseIntervention,Base$tEndIntenseIntervention, Base$tRelaxIntervention1,
-#                           Base$tRelaxIntervention2,Base$tRelaxIntervention3,
-#                           Base$tRelaxIntervention4,Base$tRelaxIntervention5 ), 1e6,
-#                         col=c('gray63','gray48', 'gray70', 'gray75','gray80','gray85', 'gray90'), border=NA))
+## Adapted from https://gist.github.com/jonocarroll/b17ce021b0637a31f584ed08a1fbe733
+read.tcsv = function(file, header=TRUE, sep=",", ...) {
+  
+  n = max(count.fields(file, sep=sep), na.rm=TRUE)
+  x = readLines(file)[-1]
+  
+  .splitvar = function(x, sep, n) {
+    var = unlist(strsplit(x, split=sep))
+    length(var) = n
+    return(var)
+  }
+  
+  x = do.call(cbind, lapply(x, .splitvar, sep=sep, n=n))
+  x = apply(x, 1, paste, collapse=sep)
+  ## empty strings are converted to NA
+  out = read.csv(text=x, sep=sep, header=header, na.strings = "", ...)
+  return(out)
+}
+
+jg_dat <- read.tcsv("data/dat_seir_code.csv")
+jg_dat$Date <- as.Date(jg_dat$Date, format = "%a %d %b %Y") # Reformat date column
+
 
 
 plot(jg_dat$Infected[1:225], type = "l", lwd = 2, xlab ="Time(days)",
@@ -439,9 +326,4 @@ plot(jg_dat$Infected[1:225], type = "l", lwd = 2, xlab ="Time(days)",
 lines(Base$sol_out$time[-1], (rowSums(cbind(Ip, IA, Ii,It,Iti,Iq)))[-1],lwd=2,col='tomato')
 legend(120, 12000,legend = c("JG's model", "Our Model"),
        col = c("black", "red"), bty = 'n',lty = c(1,1),lwd = c(2,2), cex = 1)
-
-plot(abs(jg_dat$Infected[1:225]- ((rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))))[-1]), type = "l")
-
-max(abs(jg_dat$Infected[1:225]- ((rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))))[-1]))
-mean(abs(jg_dat$Infected[1:225]- ((rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))))[-1]))
-norm(jg_dat$Infected[1:225]- ((rowSums(cbind(Ip, IA, Ii,It,Iti,Iq)))[-1]), type = "2")
+}
