@@ -31,7 +31,7 @@ jg_dat$Date <- as.Date(jg_dat$Date, format = "%a %d %b %Y") # Reformat date colu
 ## Load the get beta function
 source("code/getbeta.R")
 
-simulation_SEIR_model <- function(scalars,#R0t = 3.5,
+simulation_SEIR_model <- function(scalars, R0t = 7.086747,
                                   dateStartSchoolClosure = as.Date('2020-03-12') , # Schools closed before Intense lockdown
                                   dateStartIntenseIntervention = as.Date('2020-03-27') , #Intense intervention: lockdown
                                   dateEndIntenseIntervention = as.Date('2020-05-18'), #date we begin relaxing intense intervention
@@ -39,7 +39,6 @@ simulation_SEIR_model <- function(scalars,#R0t = 3.5,
                                   POP = Irlpop,
                                   numWeekStagger = c(3,6,9,12,15),
                                   contacts_ireland = contacts,
-                                  beta = 0.1816126, # The basic beta value 
                                   dt = 1,  # Time step (days)
                                   tmax = 225)  #nrow(jg_dat) # Time horizon (days))   
 {
@@ -65,7 +64,7 @@ simulation_SEIR_model <- function(scalars,#R0t = 3.5,
   names(pars) <- c("L","Cv","Dv","h","i","j","f","tv","q","TT")
   
   ## Estimating Beta
-  Beta <-  beta #getbeta(R0t = R0t, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
+  Beta <- getbeta(R0t = R0t, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
   
   ## Defining time points at which interventions come in
   tStartSchoolClosure <- (as.vector(dateStartSchoolClosure - dateStart) + 1) #Time point to add the school closure effect
@@ -77,10 +76,13 @@ simulation_SEIR_model <- function(scalars,#R0t = 3.5,
   tRelaxIntervention4 <- tEndIntenseIntervention + (numWeekStagger[4]*7)                               
   tRelaxIntervention5 <- tEndIntenseIntervention + (numWeekStagger[5]*7)                             
   
+  ## Rescaling contact matrices to ensure reprocity of contacts
+  Csym <- lapply(contacts_ireland, function(x, p_age) (x + t(x)*((p_age)%*%t(1/p_age)))/2, p_age) # make sure contacts are reciprocal
+  
   ## defining all parameters required for solving model equations
   parms <- list(L = pars["L"],Cv = pars["Cv"],Dv =  pars["Dv"],h = pars["h"],
                 i = pars["i"],j = pars["j"],f = pars["f"],tv = pars["tv"],
-                q = pars["q"],TT = pars["TT"], beta = Beta, N_age = N_age, contacts_ireland = contacts_ireland,
+                q = pars["q"],TT = pars["TT"], beta = Beta, N_age = N_age, contacts_ireland = Csym,#contacts_ireland,
                 tStartSchoolClosure = tStartSchoolClosure,
                 tStartIntenseIntervention = tStartIntenseIntervention,
                 tEndIntenseIntervention = tEndIntenseIntervention,
@@ -279,7 +281,7 @@ ests <- nlm(simulation_SEIR_model,log(c(1.10500000, 0.48585554, 0.1040644, 0.038
     POP = Irlpop,
     numWeekStagger = c(3,6,9,12,15),
     contacts_ireland = contacts,
-    dt = 1,
+    dt = 0.1,
     tmax = 225)
 
 

@@ -45,7 +45,7 @@ tRelaxIntervention5 <- tEndIntenseIntervention + numWeekStagger[5]*7            
 ## create step function from james gleeson's betas
 
 ## means
-
+mean(jg_dat$Rt[1:tStartSchoolClosure - 1])
 Initial_beta <- mean(jg_dat$Beta[1:tStartSchoolClosure - 1])
 
 schoolClosure_beta <- mean(jg_dat$Beta[tStartSchoolClosure:tStartIntenseIntervention - 1])
@@ -208,6 +208,7 @@ Beta_scalar <- beta_C/beta_C[1]
 scalars <- unique(Beta_scalar)
 length(scalars)
 
+
 ################################################################################
 
 jg_beta_C <- jg_dat$Beta/max(Re(eig$values))
@@ -221,6 +222,9 @@ lines(jg_beta_C, col = "green", lwd = 2)
 
 length(jg_beta_C[1:225])
 length(seq(1,225,by = 1))
+R0 <- mean(jg_dat$Rt[1:tStartSchoolClosure - 1])
+
+Beta0 <- getbeta(R0t = R0, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
 
 ################################################################################
 
