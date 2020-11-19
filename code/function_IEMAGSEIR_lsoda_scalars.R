@@ -43,11 +43,8 @@ simulation_SEIR_model <- function(R0t = 3.4,
                                   POP = Irlpop,
                                   numWeekStagger = c(3,6,9,12,15),
                                   contacts_ireland = contacts,
-                                  #mean : c(1.00000000, 0.47475554, 0.10585644, 0.05415734, 
-                                  # 0.11484640, 0.20597092, 0.22342681, 0.19233676, 0.21364790)
-                                  scalars = c(1.00000000, 0.47475554, 0.10585644, 0.05415734, 
-                                              0.11484640, 0.20597092, 0.22342681, 0.19233676, 
-                                              0.21364790),
+                                  scalars = c(1.10233162, 0.49031872, 0.10325630, 0.03780625, 0.11139420, 0.20539652, 0.22703778,
+                                              0.17883774, 0.22092837),
                                   beta = 0.1816126,
                                   dt = 1,  # Time step (days)
                                   tmax = 225 )  #nrow(jg_dat)         # Time horizon (days))   
@@ -257,8 +254,6 @@ simulation_SEIR_model <- function(R0t = 3.4,
   
   sol_out <- as.data.frame(sol)
   
-  
-  
   output = list( sol_out = sol_out, N_age = N_age, R0t = R0t, beta = beta,
                  dateStart = dateStart, dateEnd = dateEnd,
                  dateStartIntenseIntervention = dateStartIntenseIntervention, 
@@ -277,7 +272,9 @@ simulation_SEIR_model <- function(R0t = 3.4,
   
 }
 
+Test <- FALSE
 
+if (Test) {
 Base <- simulation_SEIR_model(R0t = 3.4,
                               dateStartSchoolClosure = as.Date('2020-03-12') , #schools closed before imtense lockdown
                               dateStartIntenseIntervention = as.Date('2020-03-27') , #Intense intervention: starts at Wuhan Lockdown
@@ -288,51 +285,9 @@ Base <- simulation_SEIR_model(R0t = 3.4,
                               contacts_ireland = contacts,
                               scalars = c(1.10233162, 0.49031872, 0.10325630, 0.03780625, 0.11139420, 0.20539652, 0.22703778,
                                           0.17883774, 0.22092837), # l2 norm for 2019 pop
-                              #scalars = c(1.10500000, 0.48585554, 0.1040644, 0.03805734, 
-                              #            0.11084640, 0.20197092, 0.22342681, 0.18233676, 
-                              #            0.21364790), # eyeballing
-                              # scalars = c(1.00000000, 0.47475554, 0.10585644, 0.05415734, 0.11484640,
-                              #             0.20597092, 0.22342681, 0.19233676, 0.21364790), # mean
-                              #scalars = c(1.10818408, 0.49976939, 0.09862990, 0.02386853, 0.12563219,
-                              #            0.22234443, 0.23553819, 0.17246404, 0.22153177), #nlm- MINIMISING 
-                              
-                              #scalars = c(1.10089734, 0.48037416, 0.10962627, 0.03964821, 
-                              #            0.11200476, 0.20279881, 0.22446892,
-                              #            0.18350595, 0.21570926),
-                              
-                              #scalars = c(1.00000000, 0.54412342, 0.09812348 ,0.06021849,
-                              #            0.12972868, 0.24328934,
-                              #            0.26115274, 0.21996134, 0.25087005),
-                              #beta = 0.157146834, # median
-                              #scalars = c(2.095174179, 1.155298739, 0.214862956, 0.002120975, 0.364243360, 0.412442083,
-                              #           0.522297679, 0.345276826, 0.464977006),
-                              
-                              #c(1.107055167,  0.487316332,  0.104007386, -0.005207935,  0.129421087,  0.255765661,
-                              #   0.269242446,  0.163730219,  0.223099908), 
-                              #scalars = c(1.11217223, 0.49950660, 0.09833200, 0.02283614, 0.12810131, 0.22134800, 0.23640592,
-                              #           0.17139463, 0.22196476),
-                              # c(1.110222, 0.4969624, 0.09948029, 0.02131537, 0.1295941, 0.2204802, 0.2356415,
-                              #  0.1732724, 0.2207442), #optimx L1 norm
-                              #c(1.009193, 0.5516756, 0.1030537,  0, 0.15526, 
-                              # 0.230071, 0.2424154, 0.1673028, 0.2226798), # optimx minimising the l2 norm
-                              dt = 1,  
-                              tmax = 225 ) #medians
-# 
-# Base_dt1 <- simulation_SEIR_model(R0t = 3.65,
-#                               dateStartSchoolClosure = as.Date('2020-03-12') , #schools closed before imtense lockdown
-#                               dateStartIntenseIntervention = as.Date('2020-03-27') , #Intense intervention: starts at Wuhan Lockdown
-#                               dateEndIntenseIntervention = as.Date('2020-05-18'), #date we begin relaxing intense intervention
-#                               dateStart = as.Date('2020-02-28'), #start date for epidemic in Ireland
-#                               POP = Irlpop,
-#                               numWeekStagger = c(3,6,9,12,15),
-#                               contacts_ireland = contacts,
-#                               scalars = c(1.00000000, 0.47475554, 0.10585644, 0.05415734, 
-#                                           0.11484640, 0.20597092, 0.22342681, 0.19233676, 
-#                                           0.21364790),
-#                               dt = 1,  
-#                               tmax = 225 ) 
-# 
-# 
+                              dt = 0.1,  
+                              tmax = 225 ) 
+
 # doNothing <- simulation_SEIR_model(R0t = 3.65,
 #                                    dateStartSchoolClosure = as.Date('2020-03-10') , #schools closed before imtense lockdown
 #                                    dateStartIntenseIntervention = as.Date('2020-03-10') , #Intense intervention: starts at Wuhan Lockdown
@@ -357,73 +312,6 @@ Iti <- Base$sol_out[grepl('Iti_',names(Base$sol_out))]
 Iq <- Base$sol_out[grepl('Iq_',names(Base$sol_out))]
 R <- Base$sol_out[grepl('R_',names(Base$sol_out))]
 
-# S1 <- Base_dt1$sol_out[grepl('S_',names(Base_dt1$sol_out))]
-# Ev1 <- Base_dt1$sol_out[grepl('Ev_',names(Base_dt1$sol_out))]
-# Ip1 <- Base_dt1$sol_out[grepl('Ip_',names(Base_dt1$sol_out))]
-# IA1 <- Base_dt1$sol_out[grepl('IA_',names(Base_dt1$sol_out))]
-# Ii1 <- Base_dt1$sol_out[grepl('Ii_',names(Base_dt1$sol_out))]
-# It1 <- Base_dt1$sol_out[grepl('It_',names(Base_dt1$sol_out))]
-# Iti1 <- Base_dt1$sol_out[grepl('Iti_',names(Base_dt1$sol_out))]
-# Iq1 <- Base_dt1$sol_out[grepl('Iq_',names(Base_dt1$sol_out))]
-# R1 <- Base_dt1$sol_out[grepl('R_',names(Base_dt1$sol_out))]
-# 
-# plot(Base$sol_out$time,(rowSums(cbind(Ip1, IA1, Ii1,It1,Iti1,Iq1))),lwd=2, type = "l",
-#      xlab="Time(days)", ylab="Daily no. of infections",# log = "y",
-#      panel.first = rect(c(Base$tStartSchoolClosure, Base$tStartIntenseIntervention,Base$tEndIntenseIntervention,
-#                           Base$tRelaxIntervention1, Base$tRelaxIntervention2,Base$tRelaxIntervention3,
-#                           Base$tRelaxIntervention4), -1e6,
-#                         c(Base$tStartIntenseIntervention,Base$tEndIntenseIntervention, Base$tRelaxIntervention1,
-#                           Base$tRelaxIntervention2,Base$tRelaxIntervention3,
-#                           Base$tRelaxIntervention4,Base$tRelaxIntervention5 ), 1e6,
-#                         col=c('gray63','gray48', 'gray70', 'gray75','gray80','gray85', 'gray90'), border=NA));
-# lines(Base$sol_out$time, (rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))),lwd=2,col='tomato')
-# 
-# 
-# plot(Base$sol_out$time,(rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))), lwd = 2, type = "l",
-#      xlab ="Time(days)", ylab = "Daily no. of infections",
-#      panel.first = rect(c(Base$tStartSchoolClosure, Base$tStartIntenseIntervention,
-#                           Base$tEndIntenseIntervention,
-#                           Base$tRelaxIntervention1, Base$tRelaxIntervention2,
-#                           Base$tRelaxIntervention3,
-#                           Base$tRelaxIntervention4), -1e10,
-#                         c(Base$tStartIntenseIntervention,Base$tEndIntenseIntervention,
-#                           Base$tRelaxIntervention1,
-#                           Base$tRelaxIntervention2,Base$tRelaxIntervention3,
-#                           Base$tRelaxIntervention4,Base$tRelaxIntervention5), 1e10,
-#                         col=c('gray63','gray48', 'gray65', 'gray75','gray80','gray85', 'gray90'), border=NA))
-# 
-# 
-# plot(Base_dt1$sol_out$time,(rowSums(cbind(Ip1, IA1, Ii1,It1,Iti1,Iq1))),lwd=2, type = "l",
-#      xlab="Time(days)", ylab="Daily no. of infections",# log = "y",
-#      panel.first = rect(c(Base$tStartSchoolClosure, Base$tStartIntenseIntervention,
-#                           Base$tEndIntenseIntervention,
-#                           Base$tRelaxIntervention1, Base$tRelaxIntervention2,
-#                           Base$tRelaxIntervention3,
-#                           Base$tRelaxIntervention4), -1e10,
-#                         c(Base$tStartIntenseIntervention,Base$tEndIntenseIntervention,
-#                           Base$tRelaxIntervention1,
-#                           Base$tRelaxIntervention2,Base$tRelaxIntervention3,
-#                           Base$tRelaxIntervention4,Base$tRelaxIntervention5), 1e10,
-#                         col=c('gray63','gray48', 'gray65', 'gray75','gray80','gray85', 'gray90'), border=NA))
-# 
-# 
-# lines(Base$sol_out$time, (rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))),lwd=2,col='tomato')
-# 
-# 
-# agegp = 8
-# #dt = 0.1
-# plot(Base$sol_out$time, (rowSums(cbind(Ip[,agegp], IA[,agegp], Ii[,agegp],
-#                                               It[,agegp],Iti[,agegp],Iq[,agegp]))),lwd=2,col='tomato',
-#      type = "l", main=paste0("Incidence for age [",(agegp-1)*5,',',agegp*5,')'),
-#      xlab="Time(days)", ylab="Daily no. of infections",
-#      panel.first = rect(c(Base$tStartSchoolClosure, Base$tStartIntenseIntervention,Base$tEndIntenseIntervention,
-#                           Base$tRelaxIntervention1, Base$tRelaxIntervention2,Base$tRelaxIntervention3,
-#                           Base$tRelaxIntervention4), -1e6,
-#                         c(Base$tStartIntenseIntervention,Base$tEndIntenseIntervention, Base$tRelaxIntervention1,
-#                           Base$tRelaxIntervention2,Base$tRelaxIntervention3,
-#                           Base$tRelaxIntervention4,Base$tRelaxIntervention5 ), 1e6,
-#                         col=c('gray63','gray48', 'gray70', 'gray75','gray80','gray85', 'gray90'), border=NA))
-
 
 plot(jg_dat$Infected[1:225], type = "l", lwd = 2, xlab ="Time(days)",
      ylab = "Daily no. of infections",
@@ -438,9 +326,4 @@ plot(jg_dat$Infected[1:225], type = "l", lwd = 2, xlab ="Time(days)",
 lines(Base$sol_out$time[-1], (rowSums(cbind(Ip, IA, Ii,It,Iti,Iq)))[-1],lwd=2,col='tomato')
 legend(120, 12000,legend = c("JG's model", "Our Model"),
        col = c("black", "red"), bty = 'n',lty = c(1,1),lwd = c(2,2), cex = 1)
-
-plot(abs(jg_dat$Infected[1:225]- ((rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))))[-1]), type = "l")
-
-max(abs(jg_dat$Infected[1:225]- ((rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))))[-1]))
-mean(abs(jg_dat$Infected[1:225]- ((rowSums(cbind(Ip, IA, Ii,It,Iti,Iq))))[-1]))
-norm(jg_dat$Infected[1:225]- ((rowSums(cbind(Ip, IA, Ii,It,Iti,Iq)))[-1]), type = "2")
+}
