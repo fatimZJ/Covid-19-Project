@@ -49,24 +49,25 @@ ui <- fluidPage(
 
 server <- function(input, output) {
   
+  sol <- reactive({ 
+    simulation_SEIR_model(pars = c(input$L, input$Cv, input$Dv, input$h, input$i, 
+                                   input$j, input$f, input$tv, input$q, input$TT))$sol_out 
+  })
+  
   output$summary_plot <- renderPlotly({
     
-    ### Compute Solution and Extract Compartments
-    sol <- simulation_SEIR_model(pars = c(input$L, input$Cv, input$Dv, input$h, input$i, 
-                                          input$j, input$f, input$tv, input$q, input$TT))$sol_out
-    
-    xval <- sol$time
-    S <- sol[grepl('S_',names(sol))]
-    E <- sol[grepl('Ev_',names(sol))]
-    I_Pr <- sol[grepl('Ip_',names(sol))]
-    I_As <- sol[grepl('IA_',names(sol))]
-    I_Im <- sol[grepl('Ii_',names(sol))]
-    I_Aw <- sol[grepl('It_',names(sol))]
-    I_Is <- sol[grepl('Iti_',names(sol))]
-    I_No <- sol[grepl('Iq_',names(sol))]
+    xval <- sol()$time
+    S <- sol()[grepl('S_',names(sol()))]
+    E <- sol()[grepl('Ev_',names(sol()))]
+    I_Pr <- sol()[grepl('Ip_',names(sol()))]
+    I_As <- sol()[grepl('IA_',names(sol()))]
+    I_Im <- sol()[grepl('Ii_',names(sol()))]
+    I_Aw <- sol()[grepl('It_',names(sol()))]
+    I_Is <- sol()[grepl('Iti_',names(sol()))]
+    I_No <- sol()[grepl('Iq_',names(sol()))]
     I_Al <- I_Pr + I_As + I_Im + I_Aw + I_Is + I_No
     I <- get( paste0("I_", substr(input$I_type, start = 1, stop = 2)) )
-    R <- sol[grepl('R_',names(sol))]
+    R <- sol()[grepl('R_',names(sol()))]
     
     ### Draw the Plot
     plot_ly(x = ~xval, y = ~rowSums(S), name = 'Susceptible', type = 'scatter', mode = 'lines') %>% 
@@ -79,12 +80,8 @@ server <- function(input, output) {
   
   output$S_age_plot <- renderPlotly({
     
-    ### Compute Solution and Extract Compartments
-    sol <- simulation_SEIR_model(pars = c(input$L, input$Cv, input$Dv, input$h, input$i, 
-                                          input$j, input$f, input$tv, input$q, input$TT))$sol_out
-    
-    xval <- sol$time
-    S <- sol[grepl('S_',names(sol))]
+    xval <- sol()$time
+    S <- sol()[grepl('S_',names(sol()))]
     
     ### Draw the Plot
     p_S <- plot_ly(x = ~xval, y = ~S[[1]], name = 'Age 1', type = 'scatter', mode = 'lines')
@@ -98,13 +95,9 @@ server <- function(input, output) {
   })
   
   output$E_age_plot <- renderPlotly({
-    
-    ### Compute Solution and Extract Compartments
-    sol <- simulation_SEIR_model(pars = c(input$L, input$Cv, input$Dv, input$h, input$i, 
-                                          input$j, input$f, input$tv, input$q, input$TT))$sol_out
-    
-    xval <- sol$time
-    E <- sol[grepl('Ev_',names(sol))]
+  
+    xval <- sol()$time
+    E <- sol()[grepl('Ev_',names(sol()))]
     
     ### Draw the Plot
     p_E <- plot_ly(x = ~xval, y = ~E[[1]], name = 'Age 1', type = 'scatter', mode = 'lines')
@@ -119,17 +112,13 @@ server <- function(input, output) {
   
   output$I_age_plot <- renderPlotly({
     
-    ### Compute Solution and Extract Compartments
-    sol <- simulation_SEIR_model(pars = c(input$L, input$Cv, input$Dv, input$h, input$i, 
-                                          input$j, input$f, input$tv, input$q, input$TT))$sol_out
-    
-    xval <- sol$time
-    I_Pr <- sol[grepl('Ip_',names(sol))]
-    I_As <- sol[grepl('IA_',names(sol))]
-    I_Im <- sol[grepl('Ii_',names(sol))]
-    I_Aw <- sol[grepl('It_',names(sol))]
-    I_Is <- sol[grepl('Iti_',names(sol))]
-    I_No <- sol[grepl('Iq_',names(sol))]
+    xval <- sol()$time
+    I_Pr <- sol()[grepl('Ip_',names(sol()))]
+    I_As <- sol()[grepl('IA_',names(sol()))]
+    I_Im <- sol()[grepl('Ii_',names(sol()))]
+    I_Aw <- sol()[grepl('It_',names(sol()))]
+    I_Is <- sol()[grepl('Iti_',names(sol()))]
+    I_No <- sol()[grepl('Iq_',names(sol()))]
     I_Al <- I_Pr + I_As + I_Im + I_Aw + I_Is + I_No
     I <- get( paste0("I_", substr(input$I_type, start = 1, stop = 2)) )
     
@@ -146,12 +135,8 @@ server <- function(input, output) {
   
   output$R_age_plot <- renderPlotly({
     
-    ### Compute Solution and Extract Compartments
-    sol <- simulation_SEIR_model(pars = c(input$L, input$Cv, input$Dv, input$h, input$i, 
-                                          input$j, input$f, input$tv, input$q, input$TT))$sol_out
-    
-    xval <- sol$time
-    R <- sol[grepl('R_',names(sol))]
+    xval <- sol()$time
+    R <- sol()[grepl('R_',names(sol()))]
     
     ### Draw the Plot
     p_R <- plot_ly(x = ~xval, y = ~R[[1]], name = 'Age 1', type = 'scatter', mode = 'lines')
