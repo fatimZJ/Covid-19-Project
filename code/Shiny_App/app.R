@@ -24,10 +24,19 @@ ui <- fluidPage(
       numericInput(inputId = "f", label = "Proportion of Asymptomatic:", min = 0.01, max = 1, value = 0.2,
                    step = 0.01),
       numericInput(inputId = "tv", label = "Proportion of Tested:", min = 0.01, max = 1, value = 0.8,
-                   step = 0.01),
+                   step = 0.01), 
       numericInput(inputId = "q", label = "Proportion of Isolated:", min = 0.01, max = 1, value = 0.1,
                    step = 0.01),
-      numericInput(inputId = "TT", label = "Average Test Result Time:", min = 0.1, value = 2, step = 0.1)
+      numericInput(inputId = "TT", label = "Average Test Result Time:", min = 0.1, value = 2, step = 0.1),
+      numericInput(inputId = "tmax", label = "Days Ahead", min = 1, value = 225, step = 1),
+      fileInput(inputId = "House_CM", label = "Household Contact Matrix Input", multiple = FALSE, accept = ".csv",
+                placeholder = "csv file..."),
+      fileInput(inputId = "Work_CM", label = "Work Contact Matrix Input", multiple = FALSE, accept = ".csv",
+                placeholder = "csv file..."),
+      fileInput(inputId = "School_CM", label = "School Contact Matrix Input", multiple = FALSE, accept = ".csv",
+                placeholder = "csv file..."),
+      fileInput(inputId = "Other_CM", label = "Other Contact Matrix Input", multiple = FALSE, accept = ".csv",
+                placeholder = "csv file..."),
     ),
     mainPanel(tabsetPanel(
       tabPanel("Overall", plotlyOutput(outputId = "summary_plot")),
@@ -49,9 +58,37 @@ ui <- fluidPage(
 
 server <- function(input, output) {
   
-  sol <- reactive({ 
+  input_h_CM <- reactive({
+    if (is.null(input$House_CM)) { return(contacts$home) }
+    as.matrix( read.csv(input$House_CM$datapath) )
+  })
+  
+  input_w_CM <- reactive({
+    if (is.null(input$Work_CM)) { return(contacts$work) }
+    as.matrix( read.csv(input$Work_CM$datapath) )
+  })
+  
+  input_s_CM <- reactive({
+    if (is.null(input$School_CM)) { return(contacts$school) }
+    as.matrix( read.csv(input$School_CM$datapath) )
+  })
+  
+  input_o_CM <- reactive({
+    if (is.null(input$Other_CM)) { return(contacts$others) }
+    as.matrix( read.csv(input$Other_CM$datapath) )
+  })
+  
+  input_CM <- reactive({
+    all <- input_h_CM() + input_w_CM() + input_s_CM() + input_o_CM()
+    list(home = input_h_CM(), work = input_w_CM(), school = input_s_CM(), 
+         others = input_o_CM(), all = all)
+  })
+  
+  sol <- reactive({
     simulation_SEIR_model(pars = c(input$L, input$Cv, input$Dv, input$h, input$i, 
-                                   input$j, input$f, input$tv, input$q, input$TT))$sol_out 
+                                   input$j, input$f, input$tv, input$q, input$TT),
+                          contacts_ireland = input_CM(),
+                          tmax = input$tmax)$sol_out 
   })
   
   output$summary_plot <- renderPlotly({
