@@ -28,14 +28,14 @@ ui <- fluidPage(
       numericInput(inputId = "q", label = "Proportion of Isolated:", min = 0.01, max = 1, value = 0.1,
                    step = 0.01),
       numericInput(inputId = "TT", label = "Average Test Result Time:", min = 0.1, value = 2, step = 0.1),
-      numericInput(inputId = "tmax", label = "Days Ahead", min = 1, value = 225, step = 1),
-      fileInput(inputId = "House_CM", label = "Household Contact Matrix Input", multiple = FALSE, accept = ".csv",
+      numericInput(inputId = "tmax", label = "How Many Days to Project Ahead:", min = 1, value = 225, step = 1),
+      fileInput(inputId = "House_CM", label = "Household Contact Matrix Input:", multiple = FALSE, accept = ".csv",
                 placeholder = "csv file..."),
-      fileInput(inputId = "Work_CM", label = "Work Contact Matrix Input", multiple = FALSE, accept = ".csv",
+      fileInput(inputId = "Work_CM", label = "Work Contact Matrix Input:", multiple = FALSE, accept = ".csv",
                 placeholder = "csv file..."),
-      fileInput(inputId = "School_CM", label = "School Contact Matrix Input", multiple = FALSE, accept = ".csv",
+      fileInput(inputId = "School_CM", label = "School Contact Matrix Input:", multiple = FALSE, accept = ".csv",
                 placeholder = "csv file..."),
-      fileInput(inputId = "Other_CM", label = "Other Contact Matrix Input", multiple = FALSE, accept = ".csv",
+      fileInput(inputId = "Other_CM", label = "Other Contact Matrix Input:", multiple = FALSE, accept = ".csv",
                 placeholder = "csv file..."),
     ),
     mainPanel(tabsetPanel(
@@ -91,9 +91,12 @@ server <- function(input, output) {
                           tmax = input$tmax)$sol_out 
   })
   
+  xval <- reactive({
+    as.Date('2020-02-28') + sol()$time
+  })
+  
   output$summary_plot <- renderPlotly({
     
-    xval <- sol()$time
     S <- sol()[grepl('S_',names(sol()))]
     E <- sol()[grepl('Ev_',names(sol()))]
     I_Pr <- sol()[grepl('Ip_',names(sol()))]
@@ -107,7 +110,7 @@ server <- function(input, output) {
     R <- sol()[grepl('R_',names(sol()))]
     
     ### Draw the Plot
-    plot_ly(x = ~xval, y = ~rowSums(S), name = 'Susceptible', type = 'scatter', mode = 'lines') %>% 
+    plot_ly(x = ~xval(), y = ~rowSums(S), name = 'Susceptible', type = 'scatter', mode = 'lines') %>% 
       add_trace(y = ~rowSums(E), name = 'Exposed', mode = 'lines') %>% 
       add_trace(y = ~rowSums(I), name = 'Infected', mode = 'lines') %>%
       add_trace(y = ~rowSums(R), name = 'Recovered', mode = 'lines') %>% 
@@ -117,11 +120,10 @@ server <- function(input, output) {
   
   output$S_age_plot <- renderPlotly({
     
-    xval <- sol()$time
     S <- sol()[grepl('S_',names(sol()))]
     
     ### Draw the Plot
-    p_S <- plot_ly(x = ~xval, y = ~S[[1]], name = 'Age 1', type = 'scatter', mode = 'lines')
+    p_S <- plot_ly(x = ~xval(), y = ~S[[1]], name = 'Age 1', type = 'scatter', mode = 'lines')
     
     for ( i in 2:16 ) {
       p_S <- p_S %>% add_trace(y = S[[i]], name = paste0('Age ', i), mode = 'lines')
@@ -133,11 +135,10 @@ server <- function(input, output) {
   
   output$E_age_plot <- renderPlotly({
   
-    xval <- sol()$time
     E <- sol()[grepl('Ev_',names(sol()))]
     
     ### Draw the Plot
-    p_E <- plot_ly(x = ~xval, y = ~E[[1]], name = 'Age 1', type = 'scatter', mode = 'lines')
+    p_E <- plot_ly(x = ~xval(), y = ~E[[1]], name = 'Age 1', type = 'scatter', mode = 'lines')
     
     for ( i in 2:16 ) {
       p_E <- p_E %>% add_trace(y = E[[i]], name = paste0('Age ', i), mode = 'lines')
@@ -149,7 +150,6 @@ server <- function(input, output) {
   
   output$I_age_plot <- renderPlotly({
     
-    xval <- sol()$time
     I_Pr <- sol()[grepl('Ip_',names(sol()))]
     I_As <- sol()[grepl('IA_',names(sol()))]
     I_Im <- sol()[grepl('Ii_',names(sol()))]
@@ -160,7 +160,7 @@ server <- function(input, output) {
     I <- get( paste0("I_", substr(input$I_type, start = 1, stop = 2)) )
     
     ### Draw the Plot
-    p_I <- plot_ly(x = ~xval, y = ~I[[1]], name = 'Age 1', type = 'scatter', mode = 'lines')
+    p_I <- plot_ly(x = ~xval(), y = ~I[[1]], name = 'Age 1', type = 'scatter', mode = 'lines')
     
     for ( i in 2:16 ) {
       p_I <- p_I %>% add_trace(y = I[[i]], name = paste0('Age ', i), mode = 'lines')
@@ -172,11 +172,10 @@ server <- function(input, output) {
   
   output$R_age_plot <- renderPlotly({
     
-    xval <- sol()$time
     R <- sol()[grepl('R_',names(sol()))]
     
     ### Draw the Plot
-    p_R <- plot_ly(x = ~xval, y = ~R[[1]], name = 'Age 1', type = 'scatter', mode = 'lines')
+    p_R <- plot_ly(x = ~xval(), y = ~R[[1]], name = 'Age 1', type = 'scatter', mode = 'lines')
     
     for ( i in 2:16 ) {
       p_R <- p_R %>% add_trace(y = R[[i]], name = paste0('Age ', i), mode = 'lines')
