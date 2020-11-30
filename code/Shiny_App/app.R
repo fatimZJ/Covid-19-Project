@@ -5,9 +5,52 @@ library(shiny)
 library(plotly)
 source('code/Shiny_Function_Source.R')
 
-# Define UI for app that draws a histogram ----
+# Module UI ----
+variablesUI <- function(id, number) {
+  
+  ns <- NS(id)
+  
+  tagList(
+    fluidRow(
+      column(
+        width = 8,
+        dateRangeInput(
+          inputId = "lockdown_period",
+          label   = paste0("Date Range for Lockdown ", number, ":"),
+          start = as.Date('2020-03-12'),
+          end = as.Date('2020-03-12'),
+          min = as.Date('2020-02-28'),
+          format = "dd/mm/yyyy",
+          language = "en-GB"
+        )
+      )
+    ),
+      
+    column(
+      width = 4,
+      numericInput(
+        inputId = ns("CM_scale"),
+        label   = paste0("Contact Matrix Scale for Lockdown ", number, ":"),
+        value   = 1, 
+        min     = 0
+      )
+    )
+  )
+}
+
+lockdown_scenario <- function(input, output, session){
+  reactive({
+    
+    req(input$lockdown_period, input$CM_scale)
+    
+    paste0( input$lockdown_period, input$CM_scale )
+    
+  })
+}
+
+# Define UI ----
 ui <- fluidPage(
-  titlePanel("Age Structured SEIR Model"),
+  titlePanel("Age Structured SEIR Model (WORK IN PROGRESS"),
   sidebarLayout(
     sidebarPanel(
       selectInput(inputId = "I_type", label = "Type of infected to display:",
@@ -37,6 +80,8 @@ ui <- fluidPage(
                 placeholder = "csv file..."),
       fileInput(inputId = "Other_CM", label = "Other Contact Matrix Input:", multiple = FALSE, accept = ".csv",
                 placeholder = "csv file..."),
+      h5(""),
+      actionButton("NewLockdownScenario", "Add Another Lockdown Scenario")
     ),
     mainPanel(tabsetPanel(
       tabPanel("Overall", plotlyOutput(outputId = "summary_plot")),
@@ -56,7 +101,53 @@ ui <- fluidPage(
   )
 )
 
+# Define server ----
 server <- function(input, output) {
+  
+  tmpLockdown <- reactiveValues()
+  
+  insertUI(
+    selector = "h5",
+    where    = "beforeEnd",
+    ui       = tagList(variablesUI(paste0("var", 1), 1))
+  )
+  
+  lockdown_scenario_01 <- callModule(lockdown_scenario, paste0("var", 1))
+  
+  observe(tmpLockdown[['1']] <- lockdown_scenario_01())
+  
+  observeEvent(input$NewLockdownScenario, {
+    
+    btn <- sum(input$NewLockdownScenario, 1)
+    
+    insertUI(
+      selector = "h5",
+      where    = "beforeEnd",
+      ui       = tagList(variablesUI(paste0("var", btn), btn))
+    )
+    
+    new_lockdown_scenario <- callModule(lockdown_scenario, paste0("var", btn))
+    
+    observeEvent(new_lockdown_scenario(), {
+      tmpLockdown[[paste0("'", btn, "'")]] <- new_lockdown_scenario()
+    })
+    
+  })
+  
+  LockdownScenarioList <- reactive({
+    
+    browser()
+    tmpList <- reactiveValuesToList(tmpLockdown)
+    
+    if (length(tmpList) > 1) {
+      tmpListFilters <- paste(tmpList, "", collapse = "& ")
+    } else {
+      tmpListFilters <- unlist(tmpList)
+    }
+    
+    subset(tmpDF, eval(parse(text = tmpListFilters)))
+    
+  })
   
   input_h_CM <- reactive({
     if (is.null(input$House_CM)) { return(contacts$home) }
@@ -108,6 +199,8 @@ server <- function(input, output) {
     I_Al <- I_Pr + I_As + I_Im + I_Aw + I_Is + I_No
     I <- get( paste0("I_", substr(input$I_type, start = 1, stop = 2)) )
     R <- sol()[grepl('R_',names(sol()))]
+    
+    xx <- LockdownScenarioList()
     
     ### Draw the Plot
     plot_ly(x = ~xval(), y = ~rowSums(S), name = 'Susceptible', type = 'scatter', mode = 'lines') %>% 
@@ -187,4 +280,5 @@ server <- function(input, output) {
   
 }
 
+# Run App ----
 shinyApp(ui, server)

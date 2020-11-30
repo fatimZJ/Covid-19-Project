@@ -17,11 +17,13 @@ simulation_SEIR_model <- function(R0t = 3.4, pars = c(4.9, 5.9, 7.0, 0.25, 0.05,
                                   dateStartIntenseIntervention = as.Date('2020-03-27') , #Intense intervention: lockdown
                                   dateEndIntenseIntervention = as.Date('2020-05-18'), #date we begin relaxing intense intervention
                                   dateStart = as.Date('2020-02-28'), #start date for epidemic in Ireland
+                                  intervention_dates,
+                                  intervention_scales = c(1.10233162, 0.49031872, 0.10325630, 0.03780625, 
+                                                          0.11139420, 0.20539652, 0.22703778, 0.17883774, 
+                                                          0.22092837),
                                   POP = Irlpop,
                                   numWeekStagger = c(3,6,9,12,15),
                                   contacts_ireland = contacts,
-                                  scalars = c(1.10233162, 0.49031872, 0.10325630, 0.03780625, 0.11139420, 0.20539652, 0.22703778,
-                                              0.17883774, 0.22092837),
                                   beta = 0.1816126,
                                   dt = 1,  # Time step (days)
                                   tmax = 225 )  #nrow(jg_dat)         # Time horizon (days))   
@@ -68,7 +70,7 @@ simulation_SEIR_model <- function(R0t = 3.4, pars = c(4.9, 5.9, 7.0, 0.25, 0.05,
                 tRelaxIntervention3 = tRelaxIntervention3,
                 tRelaxIntervention4 = tRelaxIntervention4,
                 tRelaxIntervention5 = tRelaxIntervention5,
-                scalars = scalars)
+                intervention_scales = intervention_scales)
   
   ## create a data frame for initial values (input must be a named vector,
   ##                                         order the same as the order of the equations,
@@ -134,7 +136,7 @@ simulation_SEIR_model <- function(R0t = 3.4, pars = c(4.9, 5.9, 7.0, 0.25, 0.05,
     tRelaxIntervention3 <- parms[["tRelaxIntervention3"]]
     tRelaxIntervention4 <- parms[["tRelaxIntervention4"]]
     tRelaxIntervention5 <- parms [["tRelaxIntervention5"]]
-    scalars <- parms[["scalars"]]
+    intervention_scales <- parms[["intervention_scales"]]
     
     if(t < tStartSchoolClosure) { CONSTRAINT  <- 1 }
     # Schools closed before lockdown period
@@ -157,7 +159,7 @@ simulation_SEIR_model <- function(R0t = 3.4, pars = c(4.9, 5.9, 7.0, 0.25, 0.05,
     #print(t)
     
     # total contacts matrix (work + school + household + other)
-    C <- t(t(contacts_ireland[[5]]) * scalars[CONSTRAINT])
+    C <- t(t(contacts_ireland[[5]]) * intervention_scales[CONSTRAINT])
     
     # calculate the number of infections and recoveries between time t and t + dt
     dSdt <- -S*beta*C%*%(Ip + h*IA + i*Ii + It + j*Iti + Iq)/N_age
@@ -204,7 +206,7 @@ if (Test) {
                                 POP = Irlpop,
                                 numWeekStagger = c(3,6,9,12,15),
                                 contacts_ireland = contacts,
-                                scalars = c(1.10233162, 0.49031872, 0.10325630, 0.03780625, 0.11139420, 0.20539652, 0.22703778,
+                                intervention_scales = c(1.10233162, 0.49031872, 0.10325630, 0.03780625, 0.11139420, 0.20539652, 0.22703778,
                                             0.17883774, 0.22092837), # l2 norm for 2019 pop
                                 dt = 0.1,  
                                 tmax = 225 ) 
@@ -217,7 +219,7 @@ if (Test) {
   #                                    POP = Irlpop,
   #                                    numWeekStagger = c(0,0,0,0,0),
   #                                    contacts_ireland = contacts,
-  #                                    scalars = c(1,1,1,1,1,1,1,1,1),
+  #                                    intervention_scales = c(1,1,1,1,1,1,1,1,1),
   #                                    dt = 1,  
   #                                    tmax = 225 ) 
   
