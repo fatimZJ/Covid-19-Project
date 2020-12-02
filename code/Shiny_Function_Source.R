@@ -10,23 +10,15 @@ library(deSolve)
 library(tidyverse)
 
 
-simulation_SEIR_model <- function(R0t = 3.4, pars = c(4.9, 5.9, 7.0, 0.25, 0.05, 0.05, 0.5, 0.75, 0.13, 3.6),
-                                  #R0tpostoutbreak = 1.5,
-                                  #pWorkOpen = c(0.1,0.15,0.25,0.40,0.55,0.7), # pWorkOpen: proportion of the work force that is working (will be time-varying)
-                                  dateStartSchoolClosure = as.Date('2020-03-12') , # Schools closed before Intense lockdown
-                                  dateStartIntenseIntervention = as.Date('2020-03-27') , #Intense intervention: lockdown
-                                  dateEndIntenseIntervention = as.Date('2020-05-18'), #date we begin relaxing intense intervention
+simulation_SEIR_model <- function(R0t = 3.4, pars = c(4.9, 5.9, 7.0, 0.25, 0.5, 0.75, 0.13, 3.6),
                                   dateStart = as.Date('2020-02-28'), #start date for epidemic in Ireland
-                                  intervention_dates,
-                                  intervention_scales = c(1.10233162, 0.49031872, 0.10325630, 0.03780625, 
-                                                          0.11139420, 0.20539652, 0.22703778, 0.17883774, 
-                                                          0.22092837),
+                                  lockdown_information = NULL,
                                   POP = Irlpop,
                                   numWeekStagger = c(3,6,9,12,15),
                                   contacts_ireland = contacts,
                                   beta = 0.1816126,
                                   dt = 1,  # Time step (days)
-                                  tmax = 225 )  #nrow(jg_dat)         # Time horizon (days))   
+                                  tmax = 225 )  # Time horizon (days))   
 {
   
   ## Load population information
@@ -45,32 +37,20 @@ simulation_SEIR_model <- function(R0t = 3.4, pars = c(4.9, 5.9, 7.0, 0.25, 0.05,
   dateEnd <- dateStart + (tmax - 1)
   
   ## Defining model parameters
-  names(pars) <- c("L","Cv","Dv","h","i","j","f","tv","q","TT")
+  names(pars) <- c("L","Cv","Dv","h","f","tv","q","TT")
   
   ## Defining time points at which interventions come in
   ds <- as.numeric(dateStart)
-  tStartSchoolClosure <- as.numeric(dateStartSchoolClosure) - ds + 1 #Time point to add the school closure effect
-  tStartIntenseIntervention <- as.numeric(dateStartIntenseIntervention) - ds + 1 #Time point to add the intense lockdown effect
-  tEndIntenseIntervention <- as.numeric(dateEndIntenseIntervention) - ds + 1     
-  tRelaxIntervention1 <- tEndIntenseIntervention + numWeekStagger[1]*7                               
-  tRelaxIntervention2 <- tEndIntenseIntervention + numWeekStagger[2]*7                               
-  tRelaxIntervention3 <- tEndIntenseIntervention + numWeekStagger[3]*7
-  tRelaxIntervention4 <- tEndIntenseIntervention + numWeekStagger[4]*7                              
-  tRelaxIntervention5 <- tEndIntenseIntervention + numWeekStagger[5]*7                              
+  int_begin <- difftime(lockdown_information[[1]], dateStart, units = "days")
+  int_end <- difftime(lockdown_information[[2]], dateStart, units = "days")
+  linfo <- data.frame(c1 = int_begin, c2 = int_end)
   
   ## defining all parameters required for solving model equations
   parms <- list(L = pars["L"],Cv = pars["Cv"],Dv =  pars["Dv"],h = pars["h"],
-                i = pars["i"],j = pars["j"],f = pars["f"],tv = pars["tv"],
-                q = pars["q"],TT = pars["TT"], beta = beta, N_age = N_age, contacts_ireland = contacts_ireland,
-                tStartSchoolClosure = tStartSchoolClosure,
-                tStartIntenseIntervention = tStartIntenseIntervention,
-                tEndIntenseIntervention = tEndIntenseIntervention,
-                tRelaxIntervention1 = tRelaxIntervention1,
-                tRelaxIntervention2 = tRelaxIntervention2,
-                tRelaxIntervention3 = tRelaxIntervention3,
-                tRelaxIntervention4 = tRelaxIntervention4,
-                tRelaxIntervention5 = tRelaxIntervention5,
-                intervention_scales = intervention_scales)
+                f = pars["f"],tv = pars["tv"], q = pars["q"], TT = pars["TT"], 
+                beta = beta, N_age = N_age, C1 = contacts_ireland[[5]],
+                H = contacts_ireland[[1]], linfo = linfo, 
+                intervention_scales = lockdown_information[[3]])
   
   ## create a data frame for initial values (input must be a named vector,
   ##                                         order the same as the order of the equations,
@@ -97,9 +77,8 @@ simulation_SEIR_model <- function(R0t = 3.4, pars = c(4.9, 5.9, 7.0, 0.25, 0.05,
                      paste0('R_',1:groups))
   
   ## Define the model for lsoda
-  SEIR_model <- function (t, x, parms) {
-    #x <- as_vector(x)
-    #browser()
+  SEIR_model <- function (t_ind, x, parms) {
+    
     # Initialise the time-dependent variables
     S <- x[grepl('S_',names(x))]
     Ev <- x[grepl('Ev_',names(x))]
@@ -116,8 +95,6 @@ simulation_SEIR_model <- function(R0t = 3.4, pars = c(4.9, 5.9, 7.0, 0.25, 0.05,
     Cv <- parms[["Cv"]]
     Dv <- parms[["Dv"]]
     h <- parms[["h"]]
-    i <- parms[["i"]]
-    j <- parms[["j"]]
     f <- parms[["f"]]
     tv <- parms[["tv"]]
     q <- parms[["q"]]
@@ -125,45 +102,15 @@ simulation_SEIR_model <- function(R0t = 3.4, pars = c(4.9, 5.9, 7.0, 0.25, 0.05,
     
     beta <- parms[["beta"]]
     N_age <- parms[["N_age"]]
-    
-    contacts_ireland <- parms[["contacts_ireland"]]
-    
-    tStartSchoolClosure <- parms[["tStartSchoolClosure"]]
-    tStartIntenseIntervention <- parms[["tStartIntenseIntervention"]]
-    tEndIntenseIntervention <- parms[["tEndIntenseIntervention"]]
-    tRelaxIntervention1 <- parms[["tRelaxIntervention1"]]
-    tRelaxIntervention2 <- parms [["tRelaxIntervention2"]]
-    tRelaxIntervention3 <- parms[["tRelaxIntervention3"]]
-    tRelaxIntervention4 <- parms[["tRelaxIntervention4"]]
-    tRelaxIntervention5 <- parms [["tRelaxIntervention5"]]
+    linfo <- parms[["linfo"]]
     intervention_scales <- parms[["intervention_scales"]]
     
-    if(t < tStartSchoolClosure) { CONSTRAINT  <- 1 }
-    # Schools closed before lockdown period
-    else if(t >= tStartSchoolClosure & t < tStartIntenseIntervention) { CONSTRAINT  <- 2 }
-    #Intense intervention- lock down
-    else if(t >= tStartIntenseIntervention & t < tEndIntenseIntervention) { CONSTRAINT  <- 3 }
-    #Relaxing interventions - Phase 1
-    else if(t >= tEndIntenseIntervention & t < tRelaxIntervention1) { CONSTRAINT  <- 4 }
-    #Relaxing interventions - Phase 2
-    else if(t >= tRelaxIntervention1 & t < tRelaxIntervention2) { CONSTRAINT  <- 5 }
-    #Relaxing interventions - Phase 3
-    else if(t >= tRelaxIntervention2 & t < tRelaxIntervention3) { CONSTRAINT  <- 6 }
-    #Relaxing interventions - Phase 4
-    else if(t >= tRelaxIntervention3 & t < tRelaxIntervention4) { CONSTRAINT  <- 7 }
-    #Relaxing interventions - Phase 5
-    else if(t >= tRelaxIntervention4 & t < tRelaxIntervention5) { CONSTRAINT  <- 8 }
-    else { CONSTRAINT  <- 9 }
+    scale_ind <- (t_ind >= linfo[[1]]) & (t_ind <= linfo[[2]])
+    C <- parms[["C1"]] * ifelse( !any(scale_ind), 1L, intervention_scales[scale_ind] )
     
-    #print(INTERVENTION)
-    #print(t)
-    
-    # total contacts matrix (work + school + household + other)
-    C <- t(t(contacts_ireland[[5]]) * intervention_scales[CONSTRAINT])
-    
-    # calculate the number of infections and recoveries between time t and t + dt
-    dSdt <- -S*beta*C%*%(Ip + h*IA + i*Ii + It + j*Iti + Iq)/N_age
-    dEvdt <- -Ev/L + S*beta*C%*%(Ip + h*IA + i*Ii + It + j*Iti + Iq)/N_age
+    # calculate the number of infections and recoveries between time t_ind and t_ind + dt
+    dSdt <- -S*beta*(C%*%(Ip + h*IA + It + Iq) + parms[["H"]]%*%(Ii + Iti))/N_age
+    dEvdt <- -Ev/L - dSdt
     dIpdt <- -Ip/(Cv - L) + (1 - f)*Ev/L
     dIAdt <- -IA/Dv + f*Ev/L
     dIidt <- -Ii/(Dv - Cv + L) + q*Ip/(Cv - L)
@@ -176,22 +123,11 @@ simulation_SEIR_model <- function(R0t = 3.4, pars = c(4.9, 5.9, 7.0, 0.25, 0.05,
     
   }
   
-  ## Solving the equations
+  ## Solving the equations and returning result
   sol <- lsoda(xstart, times, SEIR_model, parms)
-  
   list( sol_out = as.data.frame(sol), N_age = N_age, R0t = R0t, beta = beta,
         dateStart = dateStart, dateEnd = dateEnd,
-        dateStartIntenseIntervention = dateStartIntenseIntervention, 
-        dateEndIntenseIntervention = dateEndIntenseIntervention, 
-        dateStartSchoolClosure = dateStartSchoolClosure,
-        tStartSchoolClosure =  tStartSchoolClosure,
-        tStartIntenseIntervention = tStartIntenseIntervention,
-        tEndIntenseIntervention = tEndIntenseIntervention,
-        tRelaxIntervention1 = tRelaxIntervention1,
-        tRelaxIntervention2 = tRelaxIntervention2,
-        tRelaxIntervention3 = tRelaxIntervention3,
-        tRelaxIntervention4 = tRelaxIntervention4, 
-        tRelaxIntervention5 = tRelaxIntervention5 )
+        lockdown_information = lockdown_information )
   
 }
 
