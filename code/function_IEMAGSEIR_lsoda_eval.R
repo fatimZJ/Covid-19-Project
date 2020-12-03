@@ -51,6 +51,7 @@ SEIR_model <- function (t, x, parms) {
   Iti <- (x[grepl('Iti_',names(x))])
   Iq <- (x[grepl('Iq_',names(x))])
   R <- (x[grepl('R_',names(x))])
+  Cc <- (x[grepl('Cc_',names(x))])
   
   # Define model parameter values
   L <- parms[["L"]]
@@ -96,8 +97,9 @@ SEIR_model <- function (t, x, parms) {
   
   dRdt <- (IA/Dv) + (Ii/(Dv - Cv + L)) + (Iq/(Dv - Cv + L)) + (Iti/(Dv - Cv + L - TT))
   
+  dCcdt <- (It/TT)
   
-  dxdt <- list(c(dSdt, dEvdt, dIpdt, dIAdt, dIidt, dItdt, dItidt, dIqdt, dRdt))
+  dxdt <- list(c(dSdt, dEvdt, dIpdt, dIAdt, dIidt, dItdt, dItidt, dIqdt, dRdt, dCcdt))
   
   return(dxdt)
 }
@@ -166,6 +168,7 @@ xstart <- c(c(N_age - num_inf - num_exp),
             rep(0, groups),
             rep(0, groups),
             rep(0, groups),
+            rep(0, groups),
             rep(0, groups))#rep(num_rec, groups))
 
 names(xstart) <- c(paste0('S_',1:groups),
@@ -176,7 +179,8 @@ names(xstart) <- c(paste0('S_',1:groups),
                    paste0('It_',1:groups),
                    paste0('Iti_',1:groups),
                    paste0('Iq_',1:groups), 
-                   paste0('R_',1:groups))
+                   paste0('R_',1:groups),
+                   paste0('Cc_',1:groups))
 
 length(xstart)
 
@@ -199,6 +203,7 @@ It <- sol_out[grepl('It_',names(sol_out))]
 Iti <- sol_out[grepl('Iti_',names(sol_out))] 
 Iq <- sol_out[grepl('Iq_',names(sol_out))] 
 R <- sol_out[grepl('R_',names(sol_out))] 
+Cc <- sol_out[grepl('Cc_', names(sol_out))]
 
 rowSums(sol_out[-1])
 
@@ -210,14 +215,26 @@ legend(1, 20000,legend = c("JG's model", "Our Model"),
 
 
 plot(jg_dat$Susceptible[1:tmax], type = "l", lwd = 2)
-lines(x = seq(sol_out$time)*dt,rowSums(S), col = "red", lwd = 2)
+lines(x = sol_out$time,rowSums(S), col = "red", lwd = 2)
 
 plot(jg_dat$Recovered[1:tmax], type = "l", lwd = 2)
-lines(x = seq(sol_out$time)*dt, rowSums(R), col = "red", lwd = 2)
+lines(x = sol_out$time, rowSums(R), col = "red", lwd = 2)
 
 plot(jg_dat$Exposed[1:tmax], type = "l", lwd = 2)
-lines(x = seq(sol_out$time)*dt, rowSums(Ev), col = "red", lwd = 2)
+lines(x = sol_out$time, rowSums(Ev), col = "red", lwd = 2)
 
+plot(jg_dat$New.cases.confirmed[1:tmax], type = "l", lwd = 2)
+lines(x = sol_out$time, (rowSums(Cc)), col = "red", lwd = 2)
+
+plot(x = sol_out$time, rowSums(Cc), col = "red", lwd = 2, type = "l")
+
+
+plot(jg_dat$New.cases.confirmed[1:tmax], type = "l", lwd = 2)
+lines(x = sol_out$time, c(rowSums(Cc)[1], (diff(rowSums(Cc))))*10, type = "l", col = "red", lwd = 2)
+
+
+plot(cumsum(jg_dat$New.cases.confirmed[1:tmax]), type = "l", lwd = 2)
+lines(x = sol_out$time, (rowSums(Cc)), type = "l", col = "red", lwd = 2)
 
 ################################################################################
 
