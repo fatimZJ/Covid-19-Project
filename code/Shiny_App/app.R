@@ -28,7 +28,8 @@ ui <- fluidPage(
       numericInput(inputId = "q", label = "Proportion of Isolated:", min = 0.01, max = 1, value = 0.1,
                    step = 0.01),
       numericInput(inputId = "TT", label = "Average Test Result Time:", min = 0.1, value = 2, step = 0.1),
-      numericInput(inputId = "tmax", label = "How Many Days to Project Ahead:", min = 1, value = 225, step = 1),
+      dateRangeInput(inputId = "dates", label = "Time Horizon:", start = as.Date('2020-02-28'), 
+                     end = as.Date('2020-10-01'), language = "en-GB", format = "dd/mm/yyyy"),
       fileInput(inputId = "House_CM", label = "Household Contact Matrix Input:", multiple = FALSE, accept = ".csv",
                 placeholder = "csv file..."),
       fileInput(inputId = "Work_CM", label = "Work Contact Matrix Input:", multiple = FALSE, accept = ".csv",
@@ -96,12 +97,18 @@ server <- function(input, output) {
     read_csv(input$Lockdown_Info$datapath)
   })
   
+  # Process Dates ----
+  tmax <- reactive({
+    as.numeric( difftime(input$dates[2], input$dates[1], units = "days") )
+  })
+  
   # Simulate SEIR Model ----
   sol <- reactive({
-    simulation_SEIR_model(pars = c(input$L, input$Cv, input$Dv, input$h, input$i, 
-                                   input$j, input$f, input$tv, input$q, input$TT),
+    simulation_SEIR_model(pars = c(input$L, input$Cv, input$Dv, input$h, 
+                                   input$f, input$tv, input$q, input$TT),
                           contacts_ireland = input_CM(),
-                          tmax = input$tmax, 
+                          dateStart = input$dates[1],
+                          tmax = tmax(), 
                           lockdown_information = linfo())$sol_out 
   })
   
@@ -131,7 +138,7 @@ server <- function(input, output) {
   
   # Create Plots ----
   xval <- reactive({
-    as.Date('2020-02-28') + sol()$time
+    input$dates[1] + sol()$time
   })
   
   output$summary_plot <- renderPlotly({

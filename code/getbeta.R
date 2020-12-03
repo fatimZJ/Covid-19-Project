@@ -1,15 +1,10 @@
 ### get beta
 
 ### Use R0 to get beta
-getbeta <- function(R0t, pars, constraints, p_age, calculate_transmission_probability = TRUE, CONTACTMATRIX = contacts) {
-  
-  ### Return arbitrary beta if no calculation is desired
-  if (!calculate_transmission_probability) { return(0.025) }
+getbeta <- function(R0t, pars, constraints, p_age, CONTACTMATRIX = contacts) {
   
   ### Extract Parameters
   h <- pars["h"]
-  i <- pars["i"]
-  j <- pars["j"]
   L <- pars["L"]
   Cv <- pars["Cv"]
   Dv <- pars["Dv"]
