@@ -7,7 +7,7 @@ source('code/Shiny_Function_Source.R')
 
 # Define UI ----
 ui <- fluidPage(
-  titlePanel("Age Structured SEIR Model (WORK IN PROGRESS)"),
+  titlePanel("Age Structured SEIR Model"),
   sidebarLayout(
     sidebarPanel(
       
@@ -16,6 +16,7 @@ ui <- fluidPage(
                   choices = list("All", "Asymptomatic", "Pre-symptomatic", "Immediate Isolation", 
                                  "Awaiting Test Results", "Isolating After Test", "Not Isolating"),
                   selected = "All"),
+      #numericInput(inputId = "R0", label = "Basic Reproduction Number:", min = 0.1, value = 3.4),
       numericInput(inputId = "L", label = "Latent Period:", min = 0.1, value = 3.8, step = 0.1),
       numericInput(inputId = "Cv", label = "Incubation Period:", min = 0.1, value = 5.8, step = 0.1),
       numericInput(inputId = "Dv", label = "Infectious Period:", min = 0.1, value = 13.5, step = 0.1),
@@ -28,8 +29,15 @@ ui <- fluidPage(
       numericInput(inputId = "q", label = "Proportion of Isolated:", min = 0.01, max = 1, value = 0.1,
                    step = 0.01),
       numericInput(inputId = "TT", label = "Average Test Result Time:", min = 0.1, value = 2, step = 0.1),
+      numericInput(inputId = "Estart", label = "Exposed Starting Value:", min = 0, value = 16),
+      numericInput(inputId = "Istart", label = "Infected Starting Value:", min = 0, value = 1),
+      numericInput(inputId = "Rstart", label = "Recovered Starting Value:", min = 0, value = 0),
+      checkboxGroupInput(inputId = "age_sel", label = "Select Ages to Display:", choices = as.character(1:16),
+                         selected = as.character(1:16)),
       dateRangeInput(inputId = "dates", label = "Time Horizon:", start = as.Date('2020-02-28'), 
                      end = as.Date('2020-10-01'), language = "en-GB", format = "dd/mm/yyyy"),
+      fileInput(inputId = "pop_file", label = "Population File:", multiple = FALSE, accept = ".csv",
+                placeholder = "csv file..."),
       fileInput(inputId = "House_CM", label = "Household Contact Matrix Input:", multiple = FALSE, accept = ".csv",
                 placeholder = "csv file..."),
       fileInput(inputId = "Work_CM", label = "Work Contact Matrix Input:", multiple = FALSE, accept = ".csv",
@@ -45,7 +53,7 @@ ui <- fluidPage(
     # Plot Output ----
     mainPanel(tabsetPanel(
       tabPanel("Overall", plotlyOutput(outputId = "summary_plot")),
-      tabPanel("Age_Breakdown", 
+      tabPanel("Age Breakdown", 
                fluidRow(
                  column(6, 
                         plotlyOutput("S_age_plot")),
@@ -62,27 +70,76 @@ ui <- fluidPage(
 )
 
 # Define server ----
-server <- function(input, output) {
+server <- function(input, output, session) {
+  
+  # Process Population Data ----
+  popSize <- reactive({
+    if (is.null(input$pop_file)) { return(Irlpop) }
+    popdat <- read.csv(input$pop_file$datapath)
+    popsize <- popdat[[2]]
+    data.frame(age_label = as.character(popdat[[1]]), popage = popsize, propage = popsize/sum(popsize))
+  })
+  
+  # Update Checkbox Input when Population Size Changes ----
+  observe({
+    updateCheckboxGroupInput(session, inputId = "age_sel", label =  "Select Ages to Display:",
+                             choices = popSize()[[1]], selected = popSize()[[1]])
+  })
+  
+  selGroups <- reactive({
+    popSize()[[1]] %in% input$age_sel
+  })
+  
+  xstart <- reactive({
+    
+    num_group <- nrow(popSize())
+    num_exp <- input$Estart/num_group
+    num_inf <- input$Istart/num_group
+    num_rec <- input$Rstart/num_group
+    
+    xstart <- c(popSize()$popage - num_exp - num_inf - num_rec,
+                rep(num_exp, num_group),
+                rep(num_inf, num_group),
+                rep(0, num_group),
+                rep(0, num_group),
+                rep(0, num_group),
+                rep(0, num_group),
+                rep(0, num_group),
+                rep(num_rec, num_group))
+    
+    names(xstart) <- c(paste0('S_',1:num_group),
+                       paste0('Ev_',1:num_group),
+                       paste0('Ip_',1:num_group),
+                       paste0('IA_',1:num_group),
+                       paste0('Ii_',1:num_group),
+                       paste0('It_',1:num_group),
+                       paste0('Iti_',1:num_group),
+                       paste0('Iq_',1:num_group),
+                       paste0('R_',1:num_group))
+    
+    xstart
+    
+  })
   
   # Process Contact Matrices Input ----
   input_h_CM <- reactive({
     if (is.null(input$House_CM)) { return(contacts$home) }
-    as.matrix( read.csv(input$House_CM$datapath) )
+    as.matrix( read.csv(input$House_CM$datapath, header = FALSE) )
   })
   
   input_w_CM <- reactive({
     if (is.null(input$Work_CM)) { return(contacts$work) }
-    as.matrix( read.csv(input$Work_CM$datapath) )
+    as.matrix( read.csv(input$Work_CM$datapath, header = FALSE) )
   })
   
   input_s_CM <- reactive({
     if (is.null(input$School_CM)) { return(contacts$school) }
-    as.matrix( read.csv(input$School_CM$datapath) )
+    as.matrix( read.csv(input$School_CM$datapath, header = FALSE) )
   })
   
   input_o_CM <- reactive({
     if (is.null(input$Other_CM)) { return(contacts$others) }
-    as.matrix( read.csv(input$Other_CM$datapath) )
+    as.matrix( read.csv(input$Other_CM$datapath, header = FALSE) )
   })
   
   input_CM <- reactive({
@@ -108,6 +165,9 @@ server <- function(input, output) {
                                    input$f, input$tv, input$q, input$TT),
                           contacts_ireland = input_CM(),
                           dateStart = input$dates[1],
+                          startval = xstart(),
+                          POP = popSize(),
+                          #beta = beta_val(),
                           tmax = tmax(), 
                           lockdown_information = linfo())$sol_out 
   })
@@ -156,11 +216,19 @@ server <- function(input, output) {
     I <- get( paste0("I_", substr(input$I_type, start = 1, stop = 2)) )
     R <- sol()[grepl('R_',names(sol()))]
     
-    ### Draw the Plot
-    plot_ly(x = ~xval(), y = ~rowSums(S), name = 'Susceptible', type = 'scatter', mode = 'lines') %>%
-      add_trace(y = ~rowSums(E), name = 'Exposed', mode = 'lines') %>% 
-      add_trace(y = ~rowSums(I), name = 'Infected', mode = 'lines') %>%
-      add_trace(y = ~rowSums(R), name = 'Recovered', mode = 'lines') %>% 
+    #browser()
+    # Sum across desired age groups
+    S_draw <- rowSums(S[selGroups()])
+    E_draw <- rowSums(E[selGroups()])
+    I_draw <- rowSums(I[selGroups()])
+    R_draw <- rowSums(R[selGroups()])
+    
+    # Draw the Plot
+    plot_ly(x = ~xval(), y = ~S_draw, name = 'Susceptible', type = 'scatter', mode = 'lines',
+            line = list(color = 'rgb(69, 95, 245)')) %>%
+      add_trace(y = ~E_draw, name = 'Exposed', mode = 'lines', line = list(color = 'rgb(214, 122, 17)')) %>% 
+      add_trace(y = ~I_draw, name = 'Infected', mode = 'lines', line = list(color = 'rgb(186, 24, 19)')) %>%
+      add_trace(y = ~R_draw, name = 'Recovered', mode = 'lines', line = list(color = 'rgb(23, 191, 26)')) %>% 
       layout(shapes = shaded_regions()) %>%
       layout(xaxis = list(title = "Time"), 
              yaxis = list(title = "Compartment Size", 
@@ -173,16 +241,20 @@ server <- function(input, output) {
     S <- sol()[grepl('S_',names(sol()))]
     
     ### Draw the Plot
-    p_S <- plot_ly(x = ~xval(), y = ~S[[1]], name = 'Age 1', type = 'scatter', mode = 'lines')
+    selected_ages <- input$age_sel[selGroups()]
     
-    for ( i in 2:16 ) {
-      p_S <- p_S %>% add_trace(y = S[[i]], name = paste0('Age ', i), mode = 'lines')
+    p_S <- plot_ly(x = ~xval(), y = NA, type = 'scatter', mode = 'lines')
+    
+    for ( i in seq_along(selected_ages) ) {
+      p_S <- p_S %>% add_trace(y = S[[i]], name = selected_ages[i], mode = 'lines')
     }
     
     p_S %>% layout(shapes = shaded_regions()) %>%
       layout(xaxis = list(title = "Time"), 
-             yaxis = list(title = "Susceptible", 
-                          range = c(0, max(S) * 1.01)))
+             yaxis = list(title = list(text = "Susceptible",
+                                       font = list(color = 'rgb(69, 95, 245)')),
+                                       range = c(0, max(S) * 1.01))
+             )
     
   })
   
@@ -191,16 +263,20 @@ server <- function(input, output) {
     E <- sol()[grepl('Ev_',names(sol()))]
     
     ### Draw the Plot
-    p_E <- plot_ly(x = ~xval(), y = ~E[[1]], name = 'Age 1', type = 'scatter', mode = 'lines')
+    selected_ages <- input$age_sel[selGroups()]
     
-    for ( i in 2:16 ) {
-      p_E <- p_E %>% add_trace(y = E[[i]], name = paste0('Age ', i), mode = 'lines')
+    p_E <- plot_ly(x = ~xval(), y = NA, type = 'scatter', mode = 'lines')
+    
+    for ( i in seq_along(selected_ages) ) {
+      p_E <- p_E %>% add_trace(y = E[[i]], name = selected_ages[i], mode = 'lines')
     }
     
     p_E %>% layout(shapes = shaded_regions()) %>%
       layout(xaxis = list(title = "Time"), 
-             yaxis = list(title = "Exposed", 
-                          range = c(0, max(E) * 1.01)))
+             yaxis = list(title = list(text = "Exposed",
+                                       font = list(color = 'rgb(214, 122, 17)')),
+                          range = c(0, max(E) * 1.01))
+      )
     
   })
   
@@ -216,16 +292,20 @@ server <- function(input, output) {
     I <- get( paste0("I_", substr(input$I_type, start = 1, stop = 2)) )
     
     ### Draw the Plot
-    p_I <- plot_ly(x = ~xval(), y = ~I[[1]], name = 'Age 1', type = 'scatter', mode = 'lines')
+    selected_ages <- input$age_sel[selGroups()]
     
-    for ( i in 2:16 ) {
-      p_I <- p_I %>% add_trace(y = I[[i]], name = paste0('Age ', i), mode = 'lines')
+    p_I <- plot_ly(x = ~xval(), y = NA, type = 'scatter', mode = 'lines')
+    
+    for ( i in seq_along(selected_ages) ) {
+      p_I <- p_I %>% add_trace(y = I[[i]], name = selected_ages[i], mode = 'lines')
     }
     
     p_I %>% layout(shapes = shaded_regions()) %>%
       layout(xaxis = list(title = "Time"), 
-             yaxis = list(title = paste0("Infected: ", input$I_type), 
-                          range = c(0, max(I) * 1.01)))
+             yaxis = list(title = list(text = paste0("Infected: ", input$I_type),
+                                       font = list(color = 'rgb(186, 24, 19)')),
+                          range = c(0, max(I) * 1.01))
+             )
     
   })
   
@@ -234,16 +314,20 @@ server <- function(input, output) {
     R <- sol()[grepl('R_',names(sol()))]
     
     ### Draw the Plot
-    p_R <- plot_ly(x = ~xval(), y = ~R[[1]], name = 'Age 1', type = 'scatter', mode = 'lines')
+    selected_ages <- input$age_sel[selGroups()]
     
-    for ( i in 2:16 ) {
-      p_R <- p_R %>% add_trace(y = R[[i]], name = paste0('Age ', i), mode = 'lines')
+    p_R <- plot_ly(x = ~xval(), y = NA, type = 'scatter', mode = 'lines')
+    
+    for ( i in seq_along(selected_ages) ) {
+      p_R <- p_R %>% add_trace(y = R[[i]], name = selected_ages[i], mode = 'lines')
     }
     
     p_R %>% layout(shapes = shaded_regions()) %>%
       layout(xaxis = list(title = "Time"), 
-             yaxis = list(title = "Removed", 
-                          range = c(0, max(R) * 1.01)))
+             yaxis = list(title = list(text = "Recovered",
+                                       font = list(color = 'rgb(23, 191, 26)')),
+                          range = c(0, max(R) * 1.01))
+             )
     
   })
   

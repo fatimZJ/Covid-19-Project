@@ -9,6 +9,9 @@ source("code/getbeta.R")
 library(deSolve)
 library(tidyverse)
 
+Irlpop = read.csv("data/Ireland_pop_2019.csv",as.is = TRUE)[-1]
+Irlpop[[1]] <- as.character(1:16)
+
 num_inf <- 0.947286/16
 num_exp <- 14.5344/16
 groups <- 16

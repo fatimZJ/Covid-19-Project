@@ -1,7 +1,7 @@
 ### get beta
 
 ### Use R0 to get beta
-getbeta <- function(R0t, pars, constraints, p_age, CONTACTMATRIX = contacts) {
+getbeta <- function(R0t, pars, constraints = rep(1, 4), p_age, CONTACTMATRIX = contacts) {
   
   ### Extract Parameters
   h <- pars["h"]
