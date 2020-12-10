@@ -16,7 +16,7 @@ ui <- fluidPage(
                   choices = list("All", "Asymptomatic", "Pre-symptomatic", "Immediate Isolation", 
                                  "Awaiting Test Results", "Isolating After Test", "Not Isolating"),
                   selected = "All"),
-      #numericInput(inputId = "R0", label = "Basic Reproduction Number:", min = 0.1, value = 3.4),
+      numericInput(inputId = "R0", label = "Basic Reproduction Number:", min = 0.1, value = 3.4),
       numericInput(inputId = "L", label = "Latent Period:", min = 0.1, value = 3.8, step = 0.1),
       numericInput(inputId = "Cv", label = "Incubation Period:", min = 0.1, value = 5.8, step = 0.1),
       numericInput(inputId = "Dv", label = "Infectious Period:", min = 0.1, value = 13.5, step = 0.1),
@@ -159,6 +159,15 @@ server <- function(input, output, session) {
     as.numeric( difftime(input$dates[2], input$dates[1], units = "days") )
   })
   
+  # Get Beta Value ----
+  gotbeta <- reactive({
+    pars <- c(input$L, input$Cv, input$Dv, input$h, 
+              input$f, input$tv, input$q, input$TT)
+    names(pars) <- c("L","Cv","Dv","h","f","tv","q","TT")
+    getbeta(input$R0, pars = pars, p_age = popSize()$propage, 
+            CONTACTMATRIX = input_CM())
+  })
+  
   # Simulate SEIR Model ----
   sol <- reactive({
     simulation_SEIR_model(pars = c(input$L, input$Cv, input$Dv, input$h, 
@@ -167,7 +176,7 @@ server <- function(input, output, session) {
                           dateStart = input$dates[1],
                           startval = xstart(),
                           POP = popSize(),
-                          #beta = beta_val(),
+                          beta = gotbeta(),
                           tmax = tmax(), 
                           lockdown_information = linfo())$sol_out 
   })
