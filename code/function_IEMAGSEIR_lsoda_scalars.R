@@ -9,7 +9,7 @@ source("code/getbeta.R")
 library(deSolve)
 library(tidyverse)
 
-
+## Define the model function
 simulation_SEIR_model <- function(R0t = 7.086747,
                                   #R0tpostoutbreak = 1.5,
                                   #pWorkOpen = c(0.1,0.15,0.25,0.40,0.55,0.7), # pWorkOpen: proportion of the work force that is working (will be time-varying)

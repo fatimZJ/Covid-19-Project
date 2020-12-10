@@ -25,6 +25,9 @@ read.tcsv = function(file, header=TRUE, sep=",", ...) {
 jg_dat <- read.tcsv("data/dat_seir_code.csv")
 jg_dat$Date <- as.Date(jg_dat$Date, format = "%a %d %b %Y") # Reformat date column
 
+
+Rprof(filename = "Profile.out")    ## Turn on the profiler
+
 ## Load the data
 source('code/1_loadData.r')
 
@@ -64,13 +67,18 @@ scalars_init <- c(1.91365769, 1.16790530, 0.20215852,
 
 lower <- rep(0, length(scalars_init))
 upper <- rep(3, length(scalars_init))
-startt <- Sys.time()
+#startt <- Sys.time()
 ests_DEoptim <- DEoptim(nlm_fun, Acc_Cases = acc_cases$cases[1:225],
                         lower, upper, DEoptim.control(itermax = 200, reltol = 1e-8,
-                                                      steptol = 10))
+                                                      steptol = 20))
 
-endt <- Sys.time()
+ests_DEoptim$optim
 
+#endt <- Sys.time()
+
+Rprof(NULL)    ## Turn off the profiler
+
+summaryRprof(filename="Profile.out")
 
 nlm_fun(scalars = c(1.91365769, 1.16790530, 0.20215852, 
                     0.06962944, 0.18328977, 0.43466483,
@@ -80,6 +88,12 @@ plot(acc_cases$cases, type = "l")
 
 ests_nlm <- nlm(nlm_fun,log(scalars_init),
                 stepmax = 0.5, iterlim = 1000, Acc_Cases = acc_cases$cases[1:225])
+
+
+#par1       par2       par3       par4       par5 
+#2.41403230 0.94582966 0.18976759 0.11560822 0.29860922 
+#par6       par7       par8       par9 
+#0.01496017 0.63676199 1.04142427 0.16699151
 
 
 ## scalars nlm for 1:225 with different initial values
@@ -97,6 +111,8 @@ scalars <- c(2.22010663, 0.94775863, 0.23377529,
              0.07789591, 0.23403541, 0.43689101,
              0.47946681, 0.39151948, 0.36748479)
 
+
+
 library(optimx)
 
 startt <- Sys.time()
@@ -107,6 +123,17 @@ ests_optimx <-  optimx(c(1.000000, 0.97171108, 0.20812880, 0.07611468, 0.2216928
 
 endt <- Sys.time()
 
+## DEoptim 1:225, upper = 3 reltol = 1e-8, steptol = 50
+scalars <- c(1.491824, 1.442257, 0.246886, 0.031794, 0.190953,    
+             0.251813, 0.985853, 0.163904, 0.576013)
+## DEoptim 1:225, upper = 3 reltol = 1e-8, steptol = 20
+c(2.006844, 1.302479, 0.127906, 0.166834,
+  0.419797, 0.076122, 0.776124, 0.473154, 0.465366)
+
+## DEoptim 1:225, upper = 3 reltol = 1e-8, steptol = 10
+scalars <- c(1.223600, 0.317401, 0.283124,    
+1.350044, 0.008627, 0.278534,    
+0.599153, 0.156479, 0.618974)
 ## DEoptim 1:225, upper = 3 reltol = 1e-6, steptol = 10
 c(2.572162, 0.810708,  0.228309,   
 0.021862, 0.505094, 0.134786,    
@@ -131,9 +158,10 @@ test <- simulation_SEIR_model(R0t = 3.4,
                               contacts_ireland = contacts,
                               dt = 1,  
                               tmax = 225,#length(acc_cases$cases),
-                              scalars = c(2.572162, 0.810708,  0.228309,   
-                                          0.021862, 0.505094, 0.134786,    
-                                          0.014523, 0.316367, 1.196971)) 
+                              scalars = c(1.491824, 1.442257, 0.246886, 0.031794, 0.190953,    
+                                          0.251813, 0.985853, 0.163904, 0.576013))
+                              #c(2.006844, 1.302479, 0.127906, 0.166834,
+                                        #  0.419797, 0.076122, 0.776124, 0.473154, 0.465366)) 
                                 #c(0.322261050, 3.196447761, 0.210362425, 0.004546121, 0.240910420, 
                                 # 0.075327292,1.418424178, 0.267256734, 0.451187440))
                                 #c(0.955845581, 2.144257251, 0.212053027, 

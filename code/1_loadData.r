@@ -1,47 +1,55 @@
+library(tidyverse)
+library(Matrix)
 
-require(data.table)
-require(Matrix)
-require(matrixcalc)
 
-## load data: Ireland's population age structure and Contact matrices
+## load data: population age structure, contact matrices, daily accumulated cases,
+##            and interventions (start and end dates)
 
-loadPopData = TRUE
-loadContactMatrices = TRUE
+loadPopData <- TRUE
+loadContactMatrices <- TRUE
+loadCaseData <- TRUE
+loadInterventions <- TRUE
+
+County <- "Dublin"
+
+# File paths for Dublin
+pop_file_path <- "data/Dublin_pop_2019.csv"
+contacts_file_path <- "data/contacts_IRL.Rdata"
+cases_file_path <- "data/Covid19CountyStatisticsHPSCIreland.csv"
+interventions_file_path <- "data/Dublin_Interventions.csv" ## Interventions adopted in Dublin
 
 # 1) population data
 if(loadPopData) 
 { 
-  Irlpop = read.csv("data/Ireland_pop_2019.csv",as.is = TRUE)#'data/Ireland_pop.csv')
+  population <- read_csv(pop_file_path)
 }
 
 # 2) (projected) contact matrices 
-# ### Acknowlegments: codes from Petra Klepac (petrakle) 
-# normalize.contact.matrices <- function(C, popv, make.sym = F){
-#   # FUN normalize them so that
-#   # the matrix with all the contacts is normalized so that its dominant eigenvalue is 1 
-#   # and other matrices keep their contributions 
-#   if (make.sym){
-#     Csym <- lapply(C, function(x, popv) (x + t(x)*((popv)%*%t(1/popv)))/2, popv) # make sure contacts are reciprocal
-#   } else {
-#     Csym <- C # if make.sym = F leave it as is
-#   }
-#   eig1 <- Re(eigen(Csym["all"]$all)$value[1])  # save dominant eigenvalue of the matrix with all contacts
-#   
-#   # divide all matrices by the real part of the dominant matrix of all of the contacts
-#   # that way all the rescaled matrices still sum to C_all = C_work + C_home + C_school + C_other
-#   Cnorm <- lapply(Csym, function(x,eig1) x/eig1, eig1)
-#   
-#   return(Cnorm)
-# }
-
-# Synthetic contact matrices for Ireland from Prem, Cook and Jit (2017) 
-#https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005697   
-
 if(loadContactMatrices)
 {
-  load(paste0('data/contacts_IRL.Rdata'))
-  contacts <- contacts_IRL # normalize.contact.matrices(contacts_china,wuhanpop$popage, make.sym=T)
+  load(contacts_file_path)
+  contacts <- contacts_IRL
   rm(contacts_IRL)
 }
 
-rm(loadContactMatrices,loadPopData)
+
+# 3) population data
+
+if(loadCaseData) 
+{ 
+  cumulative_cases <- read_csv(cases_file_path) %>% 
+      filter(CountyName == County) %>%
+      select(TimeStamp,ConfirmedCovidCases) %>% 
+      rename(date = TimeStamp , cases = ConfirmedCovidCases) %>%
+      mutate(date = as.Date(date)) 
+}
+
+# 4) Interventions
+
+if(loadInterventions) 
+{ 
+  interventions_info <- read_csv(interventions_file_path) %>% 
+    mutate(start = as.Date(start, "%d/%m/%y"),end = as.Date(end, "%d/%m/%y")) 
+}
+
+rm(loadContactMatrices,loadPopData, loadCaseData, loadInterventions)
