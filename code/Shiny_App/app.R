@@ -247,15 +247,13 @@ server <- function(input, output, session) {
   
   output$S_age_plot <- renderPlotly({
     
-    S <- sol()[grepl('S_',names(sol()))]
+    S <- sol()[grepl('S_',names(sol()))][selGroups()]
     
     ### Draw the Plot
-    selected_ages <- input$age_sel[selGroups()]
-    
     p_S <- plot_ly(x = ~xval(), y = NA, type = 'scatter', mode = 'lines')
     
-    for ( i in seq_along(selected_ages) ) {
-      p_S <- p_S %>% add_trace(y = S[[i]], name = selected_ages[i], mode = 'lines')
+    for ( i in seq_along(input$age_sel) ) {
+      p_S <- p_S %>% add_trace(y = S[[i]], name = input$age_sel[i], mode = 'lines')
     }
     
     p_S %>% layout(shapes = shaded_regions()) %>%
@@ -269,15 +267,13 @@ server <- function(input, output, session) {
   
   output$E_age_plot <- renderPlotly({
   
-    E <- sol()[grepl('Ev_',names(sol()))]
+    E <- sol()[grepl('Ev_',names(sol()))][selGroups()]
     
     ### Draw the Plot
-    selected_ages <- input$age_sel[selGroups()]
-    
     p_E <- plot_ly(x = ~xval(), y = NA, type = 'scatter', mode = 'lines')
     
-    for ( i in seq_along(selected_ages) ) {
-      p_E <- p_E %>% add_trace(y = E[[i]], name = selected_ages[i], mode = 'lines')
+    for ( i in seq_along(input$age_sel) ) {
+      p_E <- p_E %>% add_trace(y = E[[i]], name = input$age_sel[i], mode = 'lines')
     }
     
     p_E %>% layout(shapes = shaded_regions()) %>%
@@ -301,12 +297,10 @@ server <- function(input, output, session) {
     I <- get( paste0("I_", substr(input$I_type, start = 1, stop = 2)) )
     
     ### Draw the Plot
-    selected_ages <- input$age_sel[selGroups()]
-    
     p_I <- plot_ly(x = ~xval(), y = NA, type = 'scatter', mode = 'lines')
     
-    for ( i in seq_along(selected_ages) ) {
-      p_I <- p_I %>% add_trace(y = I[[i]], name = selected_ages[i], mode = 'lines')
+    for ( i in seq_along(input$age_sel) ) {
+      p_I <- p_I %>% add_trace(y = I[[i]], name = input$age_sel[i], mode = 'lines')
     }
     
     p_I %>% layout(shapes = shaded_regions()) %>%
@@ -323,12 +317,10 @@ server <- function(input, output, session) {
     R <- sol()[grepl('R_',names(sol()))]
     
     ### Draw the Plot
-    selected_ages <- input$age_sel[selGroups()]
-    
     p_R <- plot_ly(x = ~xval(), y = NA, type = 'scatter', mode = 'lines')
     
-    for ( i in seq_along(selected_ages) ) {
-      p_R <- p_R %>% add_trace(y = R[[i]], name = selected_ages[i], mode = 'lines')
+    for ( i in seq_along(input$age_sel) ) {
+      p_R <- p_R %>% add_trace(y = R[[i]], name = input$age_sel[i], mode = 'lines')
     }
     
     p_R %>% layout(shapes = shaded_regions()) %>%
