@@ -64,7 +64,7 @@ SEIR_model <- function (t_ind, x, parms) {
   linfo <- parms[["linfo"]]
   intervention_scales <- parms[["intervention_scales"]]
   
-  scale_ind <- (t_ind >= linfo[[1]]) & (t_ind <= linfo[[2]])
+  scale_ind <- (t_ind >= linfo[[1]]) & (t_ind < linfo[[2]] + 1)
   C <- parms[["C1"]] * ifelse( !any(scale_ind), 1L, intervention_scales[scale_ind] )
   
   # calculate the number of infections and recoveries between time t_ind and t_ind + dt
