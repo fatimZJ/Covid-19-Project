@@ -1,7 +1,9 @@
 
 ## Load the data
-source('code/1_loadData.r')
-contacts_ireland <- contacts
+#source('code/1_loadData.r')
+Irlpop <- read.csv("data/Ireland_pop_2019.csv")
+load("data/contacts_IRL.Rdata")
+contacts_ireland <- contacts_IRL
 source("code/getbeta.R")
 ## Adapted from https://gist.github.com/jonocarroll/b17ce021b0637a31f584ed08a1fbe733
 read.tcsv = function(file, header=TRUE, sep=",", ...) {
@@ -117,7 +119,7 @@ for (t in 1:225){
     CONSTRAINT  <- diag(INTERVENTION,16,16)
   }
   
-  print(INTERVENTION)
+  #print(INTERVENTION)
   #print(t)
   C <- list()
   # total contacts matrix (work + school + household + other)
@@ -126,12 +128,20 @@ for (t in 1:225){
   C[[3]] <- CONSTRAINT%*%contacts_ireland[[3]]
   C[[4]] <- CONSTRAINT%*%contacts_ireland[[4]]
   C[[5]] <- CONSTRAINT%*%contacts_ireland[[5]]
-  ## Estimating Beta
-  R[t] <- getR0t(beta = Beta0, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = C)
   
-  Beta[t] <- getbeta(R0t = 3.4, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = C)
-}
+  Const <- list(home = CONSTRAINT,
+                    work = CONSTRAINT, 
+                    school = CONSTRAINT, 
+                    others = CONSTRAINT)
 
+
+  ## Estimating Beta
+  R[t] <- getR0t(beta =  0.08724303, pars = pars, p_age = Irlpop$propage, constraints = Const,
+                 CONTACTMATRIX = contacts)
+  
+  Beta[t] <- getbeta(R0t = 3.4, pars = pars, p_age = Irlpop$propage, constraints = Const,
+                     CONTACTMATRIX = contacts)
+}
 
 plot(Beta, type = "l", lwd = 2)
 plot(R, type = "l", lwd = 2)
@@ -142,13 +152,16 @@ lines(Beta, col = "red", lwd = 2)
 
 plot(jg_dat$Rt[1:tmax], type = "l", lwd = 2)
 lines(R, col = "red", lwd = 2)
+abline(h = 1)
 ## Fitting a model with these beta values and no contacts matrices should give the 
 ## same output as fitting a model with a fixed beta value and these contact matrices
 
-R0 <- 3.4
+#R0 <- 3.4
 
 Beta1 <- vector()
 R1 <- vector()
+
+Beta0 <- getbeta(R0t = 3.4, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
 
 ## Get beta for each time point
 for (t in 1:225){
@@ -216,11 +229,11 @@ for (t in 1:225){
   Beta1[t] <- Beta0 * INTERVENTION
 }
 
-Beta0 <- getbeta(R0t = R1, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
+Beta0 <- getbeta(R0t = R0, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
 plot(Beta1, type = "l", lwd = 2)
 lines(Beta0, col = "tomato", lwd = 2)
 
-R0 <- getR0t(beta = Beta0, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = C)
+R0 <- getR0t(beta = Beta0, pars = pars, p_age = Irlpop$propage, CONTACTMATRIX = contacts_ireland)
 plot(R0, type = "l")
 lines(R, col = "tomato")
 
@@ -229,4 +242,22 @@ lines(Beta1, col = "tomato", lwd = 2)
 
 plot(R, type = "l", lwd = 2)
 lines(R1, col = "tomato", lwd = 2)
+
+plot(jg_dat$Beta[1:tmax], type = "l", lwd = 2)
+lines(Beta0, col = "red", lwd = 2)
+
+plot(jg_dat$Rt[1:tmax], type = "l", lwd = 2)
+lines(R0, col = "red", lwd = 2)
+
+
+
+plot(Beta, type = "l")
+lines(Beta0, col = "tomato")
+lines(Beta1, col = "blue")
+
+
+plot(R0, type = "l")
+lines(R, col = "tomato")
+lines(R1, col = "blue")
+lines(R2, col = "green")
 

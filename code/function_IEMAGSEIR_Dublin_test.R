@@ -7,6 +7,89 @@ source('code/1_loadData.r')
 ## Load the get beta function
 source("code/getbeta.R")
 
+## Define the SEIR model for lsoda  
+SEIR_model <- function (t, x, parms) {
+  #x <- as_vector(x)
+  #browser()
+  # Initialise the time-dependent variables
+  S <- (x[grepl('S_',names(x))])
+  Ev <- (x[grepl('Ev_',names(x))])
+  Ip <- (x[grepl('Ip_',names(x))])
+  IA <- (x[grepl('IA_',names(x))])
+  Ii <- (x[grepl('Ii_',names(x))])
+  It <- (x[grepl('It_',names(x))])
+  Iti <- (x[grepl('Iti_',names(x))])
+  Iq <- (x[grepl('Iq_',names(x))])
+  R <- (x[grepl('R_',names(x))])
+  Cc <- (x[grepl('Cc_',names(x))])
+  
+  # Define model parameter values
+  L <- parms[["L"]]
+  Cv <- (parms[["Cv"]])
+  Dv <- (parms[["Dv"]])
+  h <- (parms[["h"]])
+  i <- (parms[["i"]])
+  j <- (parms[["j"]])
+  f <- (parms[["f"]])
+  tv <- (parms[["tv"]])
+  q <- (parms[["q"]])
+  TT <- (parms[["TT"]])
+  
+  beta <- parms[["beta"]]
+  N_age <- (parms[["N_age"]])
+  
+  contacts_ireland <- parms[["contacts_ireland"]]
+  
+  tstart_intervention <- parms[["tstart_intervention"]]
+  
+  tend_intervention <- parms[["tend_intervention"]]
+  
+  scalars <- parms[["scalars"]]
+  
+ 
+  
+  intervention_ind <- (t >= tstart_intervention) & (t < (tend_intervention + 1))  ## rounding t or not rounding t?
+  
+  INTERVENTION <- noquote(names(intervention_ind[intervention_ind == 1]))
+  
+  CONSTRAINT <- ifelse( !any(intervention_ind), scalars["No Intervention"], scalars[INTERVENTION])
+  
+  print(INTERVENTION)
+  print(CONSTRAINT)
+ # print(t)
+  
+  # applying the intervention to the contact matrices
+  C <-  diag(CONSTRAINT, length(N_age))%*%contacts_ireland[[5]]
+  
+  # calculate the number of infections and recoveries between time t and t + dt
+  dSdt <- -(S*(beta*(as.matrix(C)%*%as.matrix((Ip + (h*IA) + (i*Ii) + (It) +
+                                                 (j*Iti) + (Iq))/N_age))))
+  
+  dEvdt <- -(Ev/L) +(S*(beta*(as.matrix(C)%*%as.matrix((Ip + (h*IA) + (i*Ii) +
+                                                          (It) + (j*Iti) + (Iq))/N_age))))
+  
+  dIpdt <- - (Ip/(Cv - L)) + (((1 - f)*Ev)/L)
+  
+  dIAdt <- - (IA/Dv) + ((f*Ev)/L)
+  
+  dIidt <- - (Ii/(Dv - Cv + L)) + ((q*Ip)/(Cv - L))
+  
+  dItdt <- - (It/TT) + ((tv*Ip)/(Cv - L))
+  
+  dItidt <- - (Iti/(Dv - Cv + L - TT)) + (It/TT)
+  
+  dIqdt <- - (Iq/(Dv - Cv + L)) + (((1 - q - tv)*Ip)/(Cv - L))
+  
+  dRdt <- (IA/Dv) + (Ii/(Dv - Cv + L)) + (Iq/(Dv - Cv + L)) + (Iti/(Dv - Cv + L - TT))
+  
+  dCcdt <- (It/TT)
+  
+  dxdt <- list(c(dSdt, dEvdt, dIpdt, dIAdt, dIidt, dItdt, dItidt, dIqdt, dRdt,dCcdt))
+  
+  return(dxdt)
+}
+
+
 simulation_SEIR_model <- function(R0t = 3.4,
                                   POP = population,
                                   contacts_ireland = contacts,
@@ -28,7 +111,7 @@ simulation_SEIR_model <- function(R0t = 3.4,
   num_exp <- 14.5344/groups
   
   ## Setting time scale                     
-  tmax <- (as.vector(dateEnd - dateStart) + 1)
+  tmax <- as.numeric(difftime(dateEnd, dateStart))
   numSteps <- tmax/dt;
   times <- seq(from = 0, to = tmax, by = dt)
   
@@ -44,17 +127,13 @@ simulation_SEIR_model <- function(R0t = 3.4,
   
   ## Defining time points at which interventions come in
   
-  tstart_intervention <- list()
-  tend_intervention <- list()
+  tstart_intervention <- as.numeric(difftime(interventions$start, dateStart, units = "days"))
+  names(tstart_intervention) <- interventions$policy
   
-  for ( i in 1:length(interventions$policy)) {
-    
-    tstart_intervention[[i]] <- as.vector(interventions$start[i] - dateStart) + 1
-    names(tstart_intervention)[[i]] <- interventions$policy[i]
-    tend_intervention[[i]] <- as.vector(interventions$end[i] - dateStart) + 1
-    names(tend_intervention)[[i]] <- interventions$policy[i]
-  }
+  tend_intervention <- as.numeric(difftime(interventions$end, dateStart, units = "days"))
+  names(tend_intervention) <-  interventions$policy
   
+ 
   ## defining all parameters required for solving model equations
   parms <- list(L = pars["L"],Cv = pars["Cv"],Dv =  pars["Dv"],h = pars["h"],
                 i = pars["i"],j = pars["j"],f = pars["f"],tv = pars["tv"],
@@ -89,126 +168,57 @@ simulation_SEIR_model <- function(R0t = 3.4,
                      paste0('R_',1:groups),
                      paste0('Cc_',1:groups))
   
-  #x = xstart
-  #parms = parms
-  #t = 1
-  
-  ## Define the SEIR model for lsoda  
-  SEIR_model <- function (t, x, parms) {
-    #x <- as_vector(x)
-    
-    # Initialise the time-dependent variables
-    S <- (x[grepl('S_',names(x))])
-    Ev <- (x[grepl('Ev_',names(x))])
-    Ip <- (x[grepl('Ip_',names(x))])
-    IA <- (x[grepl('IA_',names(x))])
-    Ii <- (x[grepl('Ii_',names(x))])
-    It <- (x[grepl('It_',names(x))])
-    Iti <- (x[grepl('Iti_',names(x))])
-    Iq <- (x[grepl('Iq_',names(x))])
-    R <- (x[grepl('R_',names(x))])
-    Cc <- (x[grepl('Cc_',names(x))])
-    
-    # Define model parameter values
-    L <- parms[["L"]]
-    Cv <- (parms[["Cv"]])
-    Dv <- (parms[["Dv"]])
-    h <- (parms[["h"]])
-    i <- (parms[["i"]])
-    j <- (parms[["j"]])
-    f <- (parms[["f"]])
-    tv <- (parms[["tv"]])
-    q <- (parms[["q"]])
-    TT <- (parms[["TT"]])
-    
-    beta <- parms[["beta"]]
-    N_age <- (parms[["N_age"]])
-    
-    contacts_ireland <- parms[["contacts_ireland"]]
-    
-    tstart_intervention <- as.list(parms[["tstart_intervention"]])
-    
-    tend_intervention <- as.list(parms[["tend_intervention"]])
-
-    scalars <- parms[["scalars"]]
-    
-    # defining the intervention
-    # for( i in 1:length(tstart_intervention)){
-    #   if( round(t,4) > (tstart_intervention[[i]] - 1) & round(t,4) <= tend_intervention[[i]])
-    #   {
-    #     INTERVENTION <- noquote(names(tstart_intervention)[i])
-    #     CONSTRAINT  <- as.numeric(scalars[INTERVENTION])
-    #   }
-    # }
-
-    ## rounding t
-    for( i in 1:length(tstart_intervention)){
-      if (round(t) == 0){
-        INTERVENTION <- noquote(names(tstart_intervention)[1])
-        CONSTRAINT  <- as.numeric(scalars[INTERVENTION])
-      }
-      else if( (round(t) > ((tstart_intervention[[i]]) - 1)) & (round(t) <= (tend_intervention[[i]])))
-      {
-        INTERVENTION <- noquote(names(tstart_intervention)[i])
-        CONSTRAINT  <- as.numeric(scalars[INTERVENTION])
-      }
-    }
-    
-    print(INTERVENTION)
-   print(round(t))
-    #print(round(t,4))
-    # applying the intervention to the contact matrices
-    C <-  diag(CONSTRAINT, length(N_age))%*%contacts_ireland[[5]]
-    
-    # calculate the number of infections and recoveries between time t and t + dt
-    dSdt <- -(S*(beta*(as.matrix(C)%*%as.matrix((Ip + (h*IA) + (i*Ii) + (It) +
-                                                   (j*Iti) + (Iq))/N_age))))
-    
-    dEvdt <- -(Ev/L) +(S*(beta*(as.matrix(C)%*%as.matrix((Ip + (h*IA) + (i*Ii) +
-                                                            (It) + (j*Iti) + (Iq))/N_age))))
-    
-    dIpdt <- - (Ip/(Cv - L)) + (((1 - f)*Ev)/L)
-    
-    dIAdt <- - (IA/Dv) + ((f*Ev)/L)
-    
-    dIidt <- - (Ii/(Dv - Cv + L)) + ((q*Ip)/(Cv - L))
-    
-    dItdt <- - (It/TT) + ((tv*Ip)/(Cv - L))
-    
-    dItidt <- - (Iti/(Dv - Cv + L - TT)) + (It/TT)
-    
-    dIqdt <- - (Iq/(Dv - Cv + L)) + (((1 - q - tv)*Ip)/(Cv - L))
-    
-    dRdt <- (IA/Dv) + (Ii/(Dv - Cv + L)) + (Iq/(Dv - Cv + L)) + (Iti/(Dv - Cv + L - TT))
-    
-    dCcdt <- (It/TT)
-    
-    dxdt <- list(c(dSdt, dEvdt, dIpdt, dIAdt, dIidt, dItdt, dItidt, dIqdt, dRdt,dCcdt))
-    
-    return(dxdt)
-  }
-  
   ## Solving the SEIR model equations
   sol <- lsoda(xstart, times, SEIR_model, parms)
   
   ## Defining the output
-  output <- list( sol_out = as.data.frame(sol), N_age = N_age, R0t = R0t, beta = beta,
-                 dateStart = dateStart, dateEnd = dateEnd,
-                 tstart_intervention = tstart_intervention, 
-                 tend_intervention = tend_intervention, scalars = scalars)
+  output <- list( sol_out = as.data.frame(sol) , N_age = N_age, R0t = R0t, beta = beta,
+                  dateStart = dateStart, dateEnd = dateEnd,
+                  tstart_intervention = tstart_intervention, 
+                  tend_intervention = tend_intervention, scalars = scalars)
   
   return(output)
 }
 
-Test <- TRUE#FALSE
-#scalars_test <- c(1.362216848, 0.510116460, 0.106050230, 0.008395608, 0.122922232,
-#                  0.197667229, 0.248520907, 0.171967661, 0.091010276)
+Test <- TRUE #
+#scalars_test <- c(1.362216848, 1.50116460, 0.23050230, 0.0105608, 0.0122922232,
+#                  0.597667229, 0.30907, 0.251967661, 1)
 
-scalars_test <- c(1.839589e+00, 0.510116460, 0.09050230, 0.008395608, 0.122922232,
-                  0.207667229, 0.308520907, 0.101967661, 0.10010276)
+#scalars_test <- c(1.839589e+00, 0.510116460, 0.09050230, 0.008395608, 0.122922232,
+#                  0.207667229, 0.308520907, 0.101967661, 0.10010276)
 
-scalars_test <- c(6.858719e-02, 1.839589e+00, 9.594844e-02, 4.283682e-04, 2.721637e-06,
-                   3.610250e-01, 2.099779e-01, 1.736524e-01, 9.436696e-02)
+#scalars_test <- c(0.003476602, 1.929626439, 0.101822647, 0.001159886, 0.003668096,
+#                     0.338307651, 0.214795326, 0.176496238, 0.097322440)
+                   
+#scalars_test <- c(3.36625700, 0.35436691, 0.30468075, 0.01002319, 0.25632503, 
+#                  0.52871643, 0.04051897, 0.17398844, 0.06356881)
+
+#scalars_test <- c(3.234072e+00, 2.348389e-01, 2.136190e-01, 3.272638e-02, 2.050354e-01, 7.639543e-01,
+#4.721503e-01, 3.246413e-01, 5.988597e-06)
+
+#scalars_test <- c(0.003476602, 1.929626439, 0.101822647, 0.001159886, 0.003668096,
+#                 0.338307651, 0.214795326, 0.176496238, 0.097322440)
+
+## NM Random initial values
+#scalars_test <- c(0.7811568, 0.9227932, 0.1053569, 0.02633053, 0.04398501, 0.2400942,
+#0.2515661, 0.1412688, 0.1473584)
+
+## NM
+#scalars_test <- c(1.391473, 0.5718681, 0.1083594, 0.01474348, 0.08742271, 0.2026824, 0.2653538,
+# 0.1644852, 0.1034355)
+
+#scalars_test <- c(1.332476753,	0.595615258,	0.09840976,	0.162825863,	0.172910861,	0.074046275,	
+#  0.144918579,	0.321139668,	0.217734612)
+
+
+#scalars_test <- c(1.839589e+00, 0.510116460, 0.09050230, 0.008395608, 0.122922232,
+#                  0.207667229, 0.308520907, 0.101967661, 0.10010276)
+
+#scalars_test <- c(6.858719e-02, 1.839589e+00, 9.594844e-02, 4.283682e-04, 2.721637e-06,
+#                   3.610250e-01, 2.099779e-01, 1.736524e-01, 9.436696e-02)
+
+scalars_test <- c(1.362216848, 0.510116460, 0.106050230, 0.008395608, 0.122922232,
+                  0.197667229, 0.248520907, 0.171967661, 0.091010276)
 
 names(scalars_test) <- unique(interventions_info$policy)
 
@@ -249,3 +259,5 @@ if (Test) {
          col = c("black", "red"), bty = 'n',lty = c(1,1),lwd = c(2,2), cex = 1)
   
 }
+
+#plot(Base$sol_out$time, (rowSums(Cc)),lwd=2,col='tomato', type = "l")
