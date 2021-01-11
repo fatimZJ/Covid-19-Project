@@ -7,7 +7,7 @@ simulation_SEIR_model <- function(R0t, POP, contacts_ireland, interventions,
   p_age <- POP$propage
   N_age <- POP$popage
   
-  ## Initialising the comparments
+  ## Initialising the compartments
   groups <- dim(contacts_ireland[[1]])[2]
   
   num_inf <- 0.947286/groups
@@ -72,7 +72,7 @@ simulation_SEIR_model <- function(R0t, POP, contacts_ireland, interventions,
                      paste0('Cc_',1:groups))
   
   ## Solving the SEIR model equations
-  sol <- lsoda(xstart, times, SEIR_model, params, timeout = 5)
+  sol <- lsoda(xstart, times, SEIR_model, params)#, timeout = 5)
   
   ## Defining the output
   output <- list( sol_out = as.data.frame(sol) , N_age = N_age, R0t = R0t, Beta = Beta,
