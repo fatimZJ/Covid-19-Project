@@ -1,7 +1,7 @@
 
 ## Define the SEIR model for lsoda  
 
-SEIR_model_D <- function (t, x, params) {
+SEIR_model <- function (t, x, params) {
   
   #browser()
   # Initialise the time-dependent variables
