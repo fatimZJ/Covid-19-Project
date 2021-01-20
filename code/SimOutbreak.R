@@ -45,21 +45,21 @@ Base <- simulation_SEIR_model(R0t = 3.4,
 
 Cc <- Base$sol_out[grepl('Cc_',names(Base$sol_out))]
 
-plot(cumulative_cases$cases, type = "l", lwd = 2, xlab ="Time(days)",
-     ylab = "Daily no. of cumulative cases",
-     panel.first = rect(c(Base$tstart_intervention[[2]], Base$tstart_intervention[[3]],
-                          Base$tstart_intervention[[4]], Base$tstart_intervention[[5]], 
-                          Base$tstart_intervention[[6]],Base$tstart_intervention[[7]],
-                          Base$tstart_intervention[[8]], Base$tstart_intervention[[9]]), -1e6,
-                        c(Base$tend_intervention[[2]]+1, Base$tend_intervention[[3]]+1,
-                          Base$tend_intervention[[4]]+1, Base$tend_intervention[[5]]+1, 
-                          Base$tend_intervention[[6]]+1,Base$tend_intervention[[7]]+1,
-                          Base$tend_intervention[[8]]+1, Base$tend_intervention[[9]])+1, 1e6,
-                        col=c('gray90','gray48', 'gray70', 'gray75','gray85','gray80', 'gray67','gray54'), border=NA))
-
-lines(Base$sol_out$time[-1], (rowSums(Cc))[-1],lwd=2,col='tomato')
-legend(40, 24000,legend = c("Actual data", "Our Model"),
-       col = c("black", "red"), bty = 'n',lty = c(1,1),lwd = c(2,2), cex = 1)
+# plot(cumulative_cases$cases, type = "l", lwd = 2, xlab ="Time(days)",
+#      ylab = "Daily no. of cumulative cases",
+#      panel.first = rect(c(Base$tstart_intervention[[2]], Base$tstart_intervention[[3]],
+#                           Base$tstart_intervention[[4]], Base$tstart_intervention[[5]], 
+#                           Base$tstart_intervention[[6]],Base$tstart_intervention[[7]],
+#                           Base$tstart_intervention[[8]], Base$tstart_intervention[[9]]), -1e6,
+#                         c(Base$tend_intervention[[2]]+1, Base$tend_intervention[[3]]+1,
+#                           Base$tend_intervention[[4]]+1, Base$tend_intervention[[5]]+1, 
+#                           Base$tend_intervention[[6]]+1,Base$tend_intervention[[7]]+1,
+#                           Base$tend_intervention[[8]]+1, Base$tend_intervention[[9]])+1, 1e6,
+#                         col=c('gray90','gray48', 'gray70', 'gray75','gray85','gray80', 'gray67','gray54'), border=NA))
+# 
+# lines(Base$sol_out$time[-1], (rowSums(Cc))[-1],lwd=2,col='tomato')
+# legend(40, 24000,legend = c("Actual data", "Our Model"),
+#        col = c("black", "red"), bty = 'n',lty = c(1,1),lwd = c(2,2), cex = 1)
 
 Sim <- as.data.frame(cbind("time" = Base$sol_out$time, 
                     "Cc" = rowSums(Cc)))
@@ -78,9 +78,7 @@ p <- plot_ly(data = Sim,  x = ~time, y = ~(Cc), name = 'Estimated',
 
 p <- p %>% layout(legend = list(x = 0.1, y = 0.9, font = list(size = 16)))
 
-p
-
-#plot(Base$sol_out$time, (rowSums(Cc)),lwd=2,col='tomato', type = "l")
+#p
 
 layout(p, #title = 'Highlighting with Rectangles',
        shapes = list(

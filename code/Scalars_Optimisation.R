@@ -1,23 +1,19 @@
 ## Load packages
+library(tidyverse)
 library(deSolve)
+library(Matrix)
 library(optimx)
 library(parallel)
-library(tidyverse)
 
 ## Load the data
 source('code/function_load_data.r')
+#Loading the required data
 data_list <- load_data()
-
-#data <- load_data(data_path = 'data/', county = 'Dublin')
-
-# Create Data Frames from the Data Object List
-#list2env(data_list, envir = .GlobalEnv)
-
-# Remove the List containing the Data Objects
-#rm(data_list)
+list2env(data_list, envir = .GlobalEnv)
+rm(data_list)
 
 ## Load the get beta function
-source("code/getbeta.R")
+source("code/function_getbeta.R")
 
 ## Load the model function
 source("code/function_SEIR_Model.R")
@@ -61,16 +57,7 @@ optim_fun <- function(scalars, cumulative_obs_cases, population_df, contacts_lis
 }
 
 
-#Loading the required data
-data_list <- load_data()#data_path = data_path, county = county)
-
 Rand_start <- function(i) {
-  
-  # Create Data Frames from the Data Object List
-  list2env(data_list, envir = globalenv())
-  
-  # Remove the List containing the Data Objects
-  #rm(data_list)
   
   inters <- length(unique(interventions_info$policy))
   
@@ -98,14 +85,7 @@ Rand_start <- function(i) {
 
 nRandStarts <- 2
 
-## Parallel 
-Unlist <- function(list){
-  mat <- matrix(NA, nrow = length(list), ncol = length(list[[1]]))
-  for (i in 1:length(list)) {
-    mat[i, ] <- unlist(list[[i]])
-  }
-  mat
-}
+
 
 ncores <- detectCores()
 cl <- makeCluster(ncores - 4) 
@@ -117,19 +97,21 @@ clusterEvalQ(cl, {
   library(Matrix)
 })
 
-clusterExport(cl, c("optim_fun", "simulation_SEIR_model", "SEIR_model", "getbeta", "data_list"))
+clusterExport(cl, c("optim_fun", "simulation_SEIR_model", "SEIR_model", "getbeta", 
+                    "contacts", "cumulative_cases", "interventions_info", "population"))
 
 startt <- Sys.time()
-parestsMat <- parLapply(cl, 1:nRandStarts, Rand_start) 
 
-estsMat <- as.data.frame(Unlist(parestsMat))
+estsList <- parLapply(cl, 1:nRandStarts, Rand_start) 
 
-colnames(estsMat) <- c(paste0("Scalar", 1:9), "TSS", "Convergence", "NO. Calls", "time")
-write.csv(file =  "MultipleInitialResults_PARALLEL_test.csv", estsMat)
+estsMat <- as.data.frame(do.call(rbind, parestsMat))
+names(estsMat) <- names(estsList[[1]])
 
 Endt <- Sys.time()
 
 stopCluster(cl)
+
+write.csv(file =  "MultipleInitialResults_PARALLEL_test.csv", estsMat)
 
 Endt - startt
 
