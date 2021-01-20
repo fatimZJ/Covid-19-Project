@@ -1,12 +1,16 @@
-
 ## Load packages
 library(deSolve)
 library(plotly)
-## Load the data
-source('code/1_loadData.r')
+library(Matrix)
+library(tidyverse)
 
+## Load the data
+source('code/function_load_Data.r')
+Data_list <- load_data()
+list2env(Data_list, envir = .GlobalEnv)
+rm(Data_list)
 ## Load the get beta function
-source("code/getbeta.R")
+source("code/function_getbeta.R")
 
 ## Load the model function
 source("code/function_SEIR_Model.R")
@@ -14,40 +18,22 @@ source("code/function_SEIR_Model.R")
 ## load the simulation function 
 source("code/function_SEIR_Simulation.R")
 
-#scalars_test <- c(2.45199033, 0.920820963, 0.19089041, 0.01511209, 0.32126002, 
- #                 0.42580101, 0.52733763,0.30954179, 0.26381850)
-
-## nlm results
-#scalars_est <- c(2.27619341, 0.94894146, 0.21845530, 0.01503771, 0.31684429, 0.40807037, 0.49130460,
-#  0.34598300, 0.20890798)
-
-#scalars_est <- c(0.403832639,	2.644294363,	0.204475828,	0.001418374,	
-#                 0.000557027,	0.724489601,	0.420480905,	0.35805272,	
-#                 0.202294526)
-
-#scalars_est <- c(2.4242360, 0.9130557, 0.2019896, 0.0153258, 0.3168725, 0.4115858,
-#  0.5386053, 0.3075835, 0.2579594)
-##NM Results 
-
-#scalars_est <- c(2.59509019,0.996704393,	0.077085162,	0.751827556,
-#                 0.018125642,	0.511875573,	0.450964092,	0.11619769,	0.065715592
-#)
-#scalars_est <- c(2.033784e+00, 1.093872e+00, 2.143144e-01, 3.064505e-02, 3.295509e-01, 3.654255e-01,
-#  5.485281e-01, 3.371615e-01, 2.035889e-01)
-
-## NM 5 seconds timeout
-scalars_est <- c(1.652554584,	1.356798336, 0.202063943,	0.225574192,	0.004418746,	
-  0.464799905,	0.552744885,	0.311931601,	0.258379996)
-
 ## NM 10 seconds timeout
-scalars_est <- c(2.05442977,	1.054453831,	0.226260352,	0.003082808,	0.099852024,	0.574552131,	
-  0.45266616,	0.349173341,	0.200236175)
+
+#scalars_est <- c(2.175648, 0.7734942, 0.2349296, 0.05953305, 0.1763019, 0.3924366, 0.4126519,
+#                 0.4111283, 0.1557194)
+
+scalars_est <- c(0.8645919, 1.757336, 0.2124244, 0.1005269, 0.1699474, 0.334918, 
+                 0.5456985, 0.3506512, 0.2056358) 
 
 names(scalars_est) <- unique(interventions_info$policy)
 
+model_params <- c(3.6, 5.8, 13.0, 0.55, 0.05, 0.05, 0.21, 0.8, 0.1, 2)
+names(model_params) <- c("L","Cv","Dv","h","i","j","f","tv","q","TT")
 
 Base <- simulation_SEIR_model(R0t = 3.4,
                               POP = population,
+                              pars = model_params,
                               contacts_ireland = contacts,
                               interventions = interventions_info, 
                               dt = 1, 
@@ -75,8 +61,6 @@ lines(Base$sol_out$time[-1], (rowSums(Cc))[-1],lwd=2,col='tomato')
 legend(40, 24000,legend = c("Actual data", "Our Model"),
        col = c("black", "red"), bty = 'n',lty = c(1,1),lwd = c(2,2), cex = 1)
 
-
-
 Sim <- as.data.frame(cbind("time" = Base$sol_out$time, 
                     "Cc" = rowSums(Cc)))
 
@@ -94,7 +78,7 @@ p <- plot_ly(data = Sim,  x = ~time, y = ~(Cc), name = 'Estimated',
 
 p <- p %>% layout(legend = list(x = 0.1, y = 0.9, font = list(size = 16)))
 
-#p
+p
 
 #plot(Base$sol_out$time, (rowSums(Cc)),lwd=2,col='tomato', type = "l")
 

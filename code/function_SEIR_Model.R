@@ -1,7 +1,9 @@
+## Define the SEIR model for lsoda
+## Inputs:
+# t: timeframe
+# x: intialising the different compartments, must be a named vector 
+# params: model parameters 
 
-## Define the SEIR model for lsoda  
-
-# x must be a named vector of initial values
 
 SEIR_model <- function (t, x, params) {
   

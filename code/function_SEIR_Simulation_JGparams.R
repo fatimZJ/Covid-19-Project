@@ -1,17 +1,5 @@
-## SEIR Model simulation
-## Inputs 
-# R0t: the basic reproduction number
-# pars: names vector of model parameters ("L","Cv","Dv","h","i","j","f","tv","q","TT")
-# POP: population age group structure 
-# contacts_ireland: list of contact matrices
-# interventions: start, end date and policy or no policy
-# dt: time step  
-# dateStart: start date of simulation, set to first start date on interventions
-# dateEnd: end date of simulation
-# scalars: vector of scalars, length should be same as the number of interventions
 
-
-simulation_SEIR_model <- function(R0t, pars, POP, contacts_ireland, interventions, 
+simulation_SEIR_model <- function(R0t, POP, contacts_ireland, interventions, 
                                   dt, dateStart, dateEnd, scalars)    
 {
   
@@ -30,11 +18,10 @@ simulation_SEIR_model <- function(R0t, pars, POP, contacts_ireland, intervention
   numSteps <- tmax/dt;
   times <- seq(from = 0, to = tmax, by = dt)
   
-  ## Defining model parameters (as per document)
-  if (missing(pars)){
-  pars <- c(3.6, 5.8, 13.0, 0.55, 0.05, 0.05, 0.21, 0.8, 0.1, 2)
+  ## Defining model parameters
+  pars <- c(4.9, 5.9, 7.0, 0.25, 0.05, 0.05, 0.5, 0.75, 0.13, 3.6)
   names(pars) <- c("L","Cv","Dv","h","i","j","f","tv","q","TT")
-  }
+  
   ## Estimating Beta
   Beta <- getbeta(R0t = R0t, pars = pars, p_age = POP$propage, CONTACTMATRIX = contacts_ireland)
   
@@ -51,11 +38,11 @@ simulation_SEIR_model <- function(R0t, pars, POP, contacts_ireland, intervention
   
   ## defining all parameters required for solving model equations
   params <- list(L = pars["L"],Cv = pars["Cv"],Dv =  pars["Dv"],h = pars["h"],
-                 i = pars["i"],j = pars["j"],f = pars["f"],tv = pars["tv"],
-                 q = pars["q"],TT = pars["TT"], beta = Beta, N_age = N_age, contacts_ireland = Csym,#contacts_ireland,
-                 tstart_intervention = tstart_intervention,
-                 tend_intervention = tend_intervention,
-                 scalars = scalars) 
+                i = pars["i"],j = pars["j"],f = pars["f"],tv = pars["tv"],
+                q = pars["q"],TT = pars["TT"], beta = Beta, N_age = N_age, contacts_ireland = Csym,#contacts_ireland,
+                tstart_intervention = tstart_intervention,
+                tend_intervention = tend_intervention,
+                scalars = scalars) 
   
   ## create a data frame for initial values (input must be a named vector,
   ##                                         order the same as the order of the equations,
