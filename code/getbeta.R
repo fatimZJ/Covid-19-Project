@@ -1,4 +1,4 @@
-### get beta
+### getbeta function
 
 ### Use R0 to get beta
 getbeta <- function(R0t, pars, p_age, CONTACTMATRIX = contacts) {
