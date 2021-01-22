@@ -5,6 +5,8 @@ getbeta <- function(R0t, pars, p_age, CONTACTMATRIX = contacts) {
   
   ### Extract Parameters
   h <- pars["h"]
+  i <- pars["i"]
+  j <- pars["j"]
   L <- pars["L"]
   Cv <- pars["Cv"]
   Dv <- pars["Dv"]
@@ -22,22 +24,17 @@ getbeta <- function(R0t, pars, p_age, CONTACTMATRIX = contacts) {
   
   ### Create the N matrix
   # (this part is horribly inefficient, lots of room for improvement)
-  use_inds <- c(1, 2, 3, 5, 7)
-  use_inds2 <- c(4, 6)
-  use_vec <- numeric(7)
-  N_vals <- matrix(0, nrow = n, ncol = n*7) # Initialise matrix of non-zero values
+  transmission_rates <- c(0, 1, h, i, 1, j, 1)
+  N_vals <- matrix(0, nrow = n, ncol = n*7)
   col_ind <- seq(1, n*7, 7)
   for(i in 1:n) {
     count <- 1
     for(j in 1:n) {
       k <- col_ind[count]
-      use_vec[use_inds] <- c(0, 1, h, 1, 1) * C[i,j] * p_age[i]/p_age[j]
-      use_vec[use_inds2] <- rep(1, 2) * H[i,j] * p_age[i]/p_age[j]
-      N_vals[i,k:(k+6)] <- use_vec
+      N_vals[i,k:(k+6)] = transmission_rates * C[i,j] * p_age[i]/p_age[j]
       count <- count + 1
     }
   }
-  ### N is the F matrix with beta factored out
   N <- sparseMatrix( dims = rep(n*7, 2), i = rep(seq(1, 7*n, 7), n*7), j = rep(seq(1, n*7), each = n), x = as.vector(N_vals) )
   
   ### Create the inverse V matrix
