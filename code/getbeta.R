@@ -1,4 +1,3 @@
-
 ### get beta
 
 ### Use R0 to get beta
