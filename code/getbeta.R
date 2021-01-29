@@ -1,7 +1,11 @@
-### getbeta function
+
+### get beta
 
 ### Use R0 to get beta
-getbeta <- function(R0t, pars, p_age, CONTACTMATRIX = contacts) {
+getbeta <- function(R0t, pars, constraints, p_age, calculate_transmission_probability = TRUE, CONTACTMATRIX = contacts) {
+  
+  ### Return arbitrary beta if no calculation is desired
+  if (!calculate_transmission_probability) { return(0.025) }
   
   ### Extract Parameters
   h <- pars["h"]
@@ -17,24 +21,34 @@ getbeta <- function(R0t, pars, p_age, CONTACTMATRIX = contacts) {
   
   ### Prepare population contact matrix and apply constraints
   n <- dim(CONTACTMATRIX[[1]])[1]
+  if (missing(constraints)) {
+    constraints <- list(home = diag(1,n),
+                        work = diag(1,n), 
+                        school = diag(1,n), 
+                        others = diag(1,n))
+  }
+  
   Csym <- lapply(CONTACTMATRIX, function(x, p_age) (x + t(x)*((p_age)%*%t(1/p_age)))/2, p_age) # make sure contacts are reciprocal
   
-  C <- Csym[[1]] + Csym[[2]] + Csym[[3]] + Csym[[4]]
-  H <- Csym[[1]]
+  C <- constraints[[1]]%*%Csym[[1]]+
+    constraints[[2]]%*%Csym[[2]]+
+    constraints[[3]]%*%Csym[[3]]+
+    constraints[[4]]%*%Csym[[4]]
   
   ### Create the N matrix
   # (this part is horribly inefficient, lots of room for improvement)
   transmission_rates <- c(0, 1, h, i, 1, j, 1)
-  N_vals <- matrix(0, nrow = n, ncol = n*7)
+  N_vals <- matrix(0, nrow = n, ncol = n*7) # Initialise matrix of non-zero values
   col_ind <- seq(1, n*7, 7)
   for(i in 1:n) {
     count <- 1
     for(j in 1:n) {
       k <- col_ind[count]
-      N_vals[i,k:(k+6)] = transmission_rates * C[i,j] * p_age[i]/p_age[j]
+      N_vals[i,k:(k+6)] = transmission_rates * C[i,j] * p_age[i]/p_age[j] # See report for derivation
       count <- count + 1
     }
   }
+  ### N is the F matrix with beta factored out
   N <- sparseMatrix( dims = rep(n*7, 2), i = rep(seq(1, 7*n, 7), n*7), j = rep(seq(1, n*7), each = n), x = as.vector(N_vals) )
   
   ### Create the inverse V matrix
