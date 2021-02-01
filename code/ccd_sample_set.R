@@ -12,6 +12,9 @@ inter <- matrix(c(means - 2*sds, means, means + 2*sds), ncol = 3,
 
 # CCD design
 ccd_set <- ccd.design.grid(intervals = inter, range = 2)
-set_mat <- ccd_set$points
-ccd_set$weights
+set_mat <- data.frame(t(ccd_set$points))
+
+fun_list <- list(exp, exp, exp, exp, exp, identity, exp)
+trans_set_mat <- mapply(function(x, y) {x(y)}, x = fun_list, y = set_mat)
+colnames(trans_set_mat) <- parnames
 
