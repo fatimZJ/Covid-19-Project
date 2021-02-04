@@ -43,4 +43,9 @@
   # Remove the List containing the Data Objects
   rm(data_sources)
   
-####-- 4. Required Data ----------------------------------------------------####
+####-- 4. Extra App Data ----------------------------------------------------####
+  
+  # Create Default Age Groups
+  def_age_groups <- c(paste0(seq(0, 70, 5), " - ", seq(4, 74, 5)), "75+")
+  
+  

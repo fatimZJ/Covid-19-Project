@@ -79,7 +79,7 @@ server <- function(input, output, session) {
   # Process Lockdown Info ----
   linfo <- reactive({
     if (is.null(input$Lockdown_Info)) { return(input$Lockdown_Info) }
-    read_csv(input$Lockdown_Info$datapath)
+    read_csv(input$Lockdown_Info$datapath, col_types = "DDn")
   })
   
   # Process Dates ----
@@ -165,7 +165,7 @@ server <- function(input, output, session) {
             line = list(color = 'rgb(69, 95, 245)')) %>%
       add_trace(y = ~E_draw, name = 'Exposed', mode = 'lines', line = list(color = 'rgb(214, 122, 17)')) %>% 
       add_trace(y = ~I_draw, name = 'Infected', mode = 'lines', line = list(color = 'rgb(186, 24, 19)')) %>%
-      add_trace(y = ~R_draw, name = 'Recovered', mode = 'lines', line = list(color = 'rgb(23, 191, 26)')) %>% 
+      add_trace(y = ~R_draw, name = 'Removed', mode = 'lines', line = list(color = 'rgb(23, 191, 26)')) %>% 
       layout(shapes = shaded_regions()) %>%
       layout(xaxis = list(title = "Time"), 
              yaxis = list(title = "Compartment Size", 
@@ -253,7 +253,7 @@ server <- function(input, output, session) {
     
     p_R %>% layout(shapes = shaded_regions()) %>%
       layout(xaxis = list(title = "Time"), 
-             yaxis = list(title = list(text = "Recovered",
+             yaxis = list(title = list(text = "Removed",
                                        font = list(color = 'rgb(23, 191, 26)')),
                           range = c(0, max(R) * 1.01))
       )
