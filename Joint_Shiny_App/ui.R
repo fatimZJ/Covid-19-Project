@@ -1,16 +1,23 @@
 sidebar <- dashboardSidebar(
   sidebarMenu(
-    menuItem("SEIR Model Output", tabName = "seir", icon = icon("list")),
-    menuItem("Lockdown Effect", tabName = "LE", icon = icon("file"))
+    menuItem("Info", tabName = "info", icon = icon("info")),
+    menuItem("SEIR Model Output", tabName = "our_stats", icon = icon("chart-bar")),
+    menuItem("Model Dashboard", tabName = "seir", icon = icon("dashboard")),
+    menuItem("Forecast Settings", tabName = "forecast", icon = icon("wrench")),
+    menuItem("Comparison", tabname = "compare", icon = icon("balance-scale-left"))
   )
 )
 
 body <- dashboardBody(
   tabItems(
-    #Tab 1: SEIR Output
+    #Tab 1: Info
+    tabItem(tabName = "info"),
+    #Tab 2: SEIR Model Output
+    tabItem(tabName = "our_stats"),
+    #Tab 3: Model Dashboard
     tabItem(tabName = "seir", 
             fluidRow(
-              box( title = "Inputs", width = 2, solidHeader = TRUE, status = "warning",
+              box( title = "Inputs", width = 2, solidHeader = TRUE, status = "primary",
                    selectInput(inputId = "I_type", label = "Type of infected to display:",
                                choices = list("All", "Asymptomatic", "Pre-symptomatic", "Immediate Isolation", 
                                               "Awaiting Test Results", "Isolating After Test", "Not Isolating"),
@@ -20,6 +27,8 @@ body <- dashboardBody(
                    numericInput(inputId = "Cv", label = "Incubation Period:", min = 0.1, value = 5.8, step = 0.1),
                    numericInput(inputId = "Dv", label = "Infectious Period:", min = 0.1, value = 11.6, step = 0.1),
                    numericInput(inputId = "h", label = "Asymptomatic Transmission:", min = 0.01, max = 1, value = 0.55,
+                                step = 0.01),
+                   numericInput(inputId = "k", label = "Isolated Transmission:", min = 0.01, max = 1, value = 0.05,
                                 step = 0.01),
                    numericInput(inputId = "f", label = "Proportion of Asymptomatic:", min = 0.01, max = 1, value = 0.2,
                                 step = 0.01),
@@ -31,108 +40,112 @@ body <- dashboardBody(
                    numericInput(inputId = "Estart", label = "Exposed Starting Value:", min = 0, value = 16),
                    numericInput(inputId = "Istart", label = "Infected Starting Value:", min = 0, value = 1),
                    numericInput(inputId = "Rstart", label = "Removed Starting Value:", min = 0, value = 0),
-                   #checkboxGroupInput(inputId = "age_sel", label = "Select Ages to Display:", choices = as.character(1:16),
-                   #                   selected = as.character(1:16)),
                    checkboxGroupInput(inputId = "age_sel", label = "Select Ages to Display:", 
-                                      choices = as.character(1:16),
-                                      selected = as.character(1:16)),
+                                      choices = def_age_groups, selected = def_age_groups),
                    dateRangeInput(inputId = "dates", label = "Time Horizon:", start = as.Date('2020-02-28'), 
-                                  end = as.Date('2020-10-01'), language = "en-GB", format = "dd/mm/yyyy"),
-                   fileInput(inputId = "pop_file", label = "Population File:", multiple = FALSE, accept = ".csv",
-                             placeholder = "csv file..."),
-                   fileInput(inputId = "House_CM", label = "Household Contact Matrix Input:", multiple = FALSE, accept = ".csv",
-                             placeholder = "csv file..."),
-                   fileInput(inputId = "Work_CM", label = "Work Contact Matrix Input:", multiple = FALSE, accept = ".csv",
-                             placeholder = "csv file..."),
-                   fileInput(inputId = "School_CM", label = "School Contact Matrix Input:", multiple = FALSE, accept = ".csv",
-                             placeholder = "csv file..."),
-                   fileInput(inputId = "Other_CM", label = "Other Contact Matrix Input:", multiple = FALSE, accept = ".csv",
-                             placeholder = "csv file..."),
-                   fileInput(inputId = "Lockdown_Info", label = "Lockdown Scenario Input:", multiple = FALSE, accept = ".csv",
-                             placeholder = "csv file...") 
+                                  end = td, language = "en-GB", format = "dd/mm/yyyy"),
               ),
-              box( width = 10,
-                   title = "Overall", solidHeader = TRUE, collapsible = TRUE,
-                   status = "info",
-                   plotlyOutput("summary_plot") %>% 
-                     withSpinner(color = "#0dc5c1", size = 2, hide.ui = FALSE)
-              ),
-              box( width = 10, collapsible = TRUE, status = "info",
-                title = "Age Group and Compartment Breakdown", solidHeader = TRUE,
-                fluidRow(
-                  column(6,
-                         plotlyOutput("S_age_plot") %>% 
-                           withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
-                  ),
-                  column(6, 
-                         plotlyOutput("E_age_plot") %>% 
-                           withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
-                  ),
-                  column(6, 
-                         plotlyOutput("I_age_plot") %>% 
-                           withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
-                  ),
-                  column(6, 
-                         plotlyOutput("R_age_plot") %>% 
-                           withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
-                  )
-                )
+              tabBox( width = 10, title = "SEIR Model Outputs",
+                      tabPanel( title = "Dublin",
+                                fluidRow(
+                                  column(10,
+                                         plotlyOutput("summary_plot_dub") %>% 
+                                           withSpinner(color = "#0dc5c1", size = 2, hide.ui = FALSE)),
+                                  column(6,
+                                         plotlyOutput("S_age_plot_dub") %>% 
+                                           withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
+                                  ),
+                                  column(6, 
+                                         plotlyOutput("E_age_plot_dub") %>% 
+                                           withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
+                                  ),
+                                  column(6, 
+                                         plotlyOutput("I_age_plot_dub") %>% 
+                                           withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
+                                  ),
+                                  column(6, 
+                                         plotlyOutput("R_age_plot_dub") %>% 
+                                           withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
+                                  )
+                                )
+                      ),
+                      tabPanel(title = "Ireland",
+                               fluidRow(
+                                 column(10,
+                                        plotlyOutput("summary_plot_irl") %>% 
+                                          withSpinner(color = "#0dc5c1", size = 2, hide.ui = FALSE)),
+                                 column(6,
+                                        plotlyOutput("S_age_plot_irl") %>% 
+                                          withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
+                                 ),
+                                 column(6, 
+                                        plotlyOutput("E_age_plot_irl") %>% 
+                                          withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
+                                 ),
+                                 column(6, 
+                                        plotlyOutput("I_age_plot_irl") %>% 
+                                          withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
+                                 ),
+                                 column(6, 
+                                        plotlyOutput("R_age_plot_irl") %>% 
+                                          withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
+                                 )
+                               )
+                      )
+              
               )
               
     )),
-    #Tab 2: Lockdown Effects
-    tabItem(tabName = "LE", 
+    #Tab 4: Forecast Settings
+    tabItem(tabName = "forecast",
             fluidRow(
-            box( title = "Inputs", width = 2, solidHeader = TRUE, status = "warning",
-              fileInput(inputId = "PopData", label = "Population Structure", #"Choose CSV File",
-                        multiple = FALSE,
-                        accept = c("text/csv",
-                                   "text/comma-separated-values,text/plain",
-                                   ".csv")),
-              fileInput(inputId = "CountData", label = "Cumulative Number of Cases per Day", #"Choose CSV File",
-                        multiple = FALSE,
-                        accept = c("text/csv",
-                                   "text/comma-separated-values,text/plain",
-                                   ".csv")),
-              
-              fileInput(inputId = "InterInfo", label = "Interventions Start and End dates", #"Choose CSV File",
-                        multiple = FALSE,
-                        accept = c("text/csv",
-                                   "text/comma-separated-values,text/plain",
-                                   ".csv")),
-              
-              fileInput(inputId = "House_CM", label = "Household Contact Matrix Input", 
-                        multiple = FALSE, accept = ".csv"),
-              # placeholder = "csv file..."),
-              fileInput(inputId = "Work_CM", label = "Work Contact Matrix Input", 
-                        multiple = FALSE, accept = ".csv"),
-              #placeholder = "csv file..."),
-              fileInput(inputId = "School_CM", label = "School Contact Matrix Input", 
-                        multiple = FALSE, accept = ".csv"),
-              #placeholder = "csv file..."),
-              fileInput(inputId = "Other_CM", label = "Other Contact Matrix Input", 
-                        multiple = FALSE, accept = ".csv"),
-              # placeholder = "csv file..."),
-              
-              # Horizontal line ----
-              tags$hr(),
-              
-              actionButton("go", "Retrain Model")
+              tabBox( title = "Forecast", width = 10,
+                      tabPanel(title = "Dublin",
+                              plotlyOutput("forecast_plot_dub")),
+                      tabPanel(title = "Ireland",
+                              plotlyOutput("forecast_plot_irl"))
+              ),
+              box( title = "Expected Outcome", width = 2, solidHeader = TRUE, status = "danger",
+                  h2("Expected Deaths and Costs here"))
+              ),
+            box( title = "Compartment:", width = 2, solidHeader = TRUE, status = "warning",
+                 selectInput(inputId = "Disp_comp", label = "Compartment:",
+                             choices = list("Susceptible", "Exposed", "Infected:All", 
+                                            "Infected:Asymptomatic", "Infected:Pre-symptomatic", 
+                                            "Infected:Symptomatic", "Removed"),
+                             selected = "Infected:All")
+                 ),
+            box( title = "Restriction Weeks 1 & 2:", width = 2, solidHeader = TRUE, status = "primary",
+                 selectInput(inputId = "res1", label = "Restriction:",
+                             choices = list("None", "L1", "L2", "L3", "L4", "L5"),
+                             selected = "None")
+                 ),
+            box( title = "Restriction Weeks 3 & 4:", width = 2, solidHeader = TRUE, status = "primary",
+                 selectInput(inputId = "res2", label = "Restriction:",
+                             choices = list("None", "L1", "L2", "L3", "L4", "L5"),
+                             selected = "None")
             ),
-            box( title = "Output", width = 10, solidHeader = TRUE, status = "info",
-            fluidRow(
-              column(6, 
-                     plotlyOutput("PlotCc")%>% withSpinner(color = "#0dc5c1", size = 2)),
-              column(6, 
-                     plotlyOutput("PlotRt")%>% withSpinner(color = "#0dc5c1", size = 2))
-            )))
-    )
+            box( title = "Restriction Weeks 5 & 6:", width = 2, solidHeader = TRUE, status = "primary",
+                 selectInput(inputId = "res3", label = "Restriction:",
+                             choices = list("None", "L1", "L2", "L3", "L4", "L5"),
+                             selected = "None")
+            ),
+            box( title = "Restriction Weeks 7 & 8:", width = 2, solidHeader = TRUE, status = "primary",
+                 selectInput(inputId = "res4", label = "Restriction:",
+                             choices = list("None", "L1", "L2", "L3", "L4", "L5"),
+                             selected = "None")
+            )
+            ),
+    
+    #Tab 5: Comparison
+    tabItem(tabName = "compare")
   )
 )
 
 # Put them together into a dashboardPage
-dashboardPage( skin = "yellow",
-  dashboardHeader(title = "COVID-19 SEIR Case Counts"),
+dashboardPage( skin = "blue",
+  dashboardHeader(title = "Ireland COVID-19 Incidence Modelling",
+                  titleWidth = 380),
   sidebar,
   body
 )

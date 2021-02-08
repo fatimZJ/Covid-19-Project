@@ -18,10 +18,10 @@ SEIR_model_D <- function (t_ind, x, parms) {
   Dv <- parms[["Dv"]]
   h <- parms[["h"]]
   f <- parms[["f"]]
+  k <- parms[["k"]]
   tv <- parms[["tv"]]
   q <- parms[["q"]]
   TT <- parms[["TT"]]
-  
   beta <- parms[["beta"]]
   N_age <- parms[["N_age"]]
   linfo <- parms[["linfo"]]
@@ -32,7 +32,7 @@ SEIR_model_D <- function (t_ind, x, parms) {
   C <- parms[["C1"]] * ifelse( !any(scale_ind), 1L, intervention_scales[scale_ind] )
   
   # calculate the number of infections and recoveries between time t_ind and t_ind + dt
-  dSdt <- -S*beta*(C%*%(Ip + h*IA + It + Iq) + parms[["H"]]%*%(Ii + Iti))/N_age
+  dSdt <- -S*beta*C%*%(Ip + h*IA + It + Iq + k*Ii + k*Iti)/N_age
   dEvdt <- -Ev/L - dSdt
   dIpdt <- -Ip/(Cv - L) + (1 - f)*Ev/L
   dIAdt <- -IA/Dv + f*Ev/L
@@ -46,7 +46,7 @@ SEIR_model_D <- function (t_ind, x, parms) {
   
 }
 
-SEIR_model_simulation <- function(pars = c(4.9, 5.9, 7.0, 0.25, 0.5, 0.75, 0.13, 3.6),
+SEIR_model_simulation <- function(pars,
                                   dateStart = as.Date('2020-02-28'),
                                   lockdown_information = NULL,
                                   POP = population,
@@ -64,16 +64,13 @@ SEIR_model_simulation <- function(pars = c(4.9, 5.9, 7.0, 0.25, 0.5, 0.75, 0.13,
   ## Initialising the compartments
   groups <- dim(contacts_ireland[[1]])[2]
   
-  num_inf <- 0.947286/groups
-  num_exp <- 14.5344/groups
-  
   ## Setting time scale                     
   numSteps <- tmax/dt;
   times <- seq(from = 0, to = tmax, by = dt)
   dateEnd <- dateStart + (tmax - 1)
   
   ## Defining model parameters
-  names(pars) <- c("L","Cv","Dv","h","f","tv","q","TT")
+  names(pars) <- c("L","Cv","Dv","h","f","tv","q", "k", "TT")
   
   ## Defining time points at which interventions come in
   ds <- as.numeric(dateStart)
@@ -82,9 +79,9 @@ SEIR_model_simulation <- function(pars = c(4.9, 5.9, 7.0, 0.25, 0.5, 0.75, 0.13,
   linfo <- data.frame(c1 = int_begin, c2 = int_end)
   
   ## defining all parameters required for solving model equations
-  parms <- list(L = pars["L"],Cv = pars["Cv"],Dv =  pars["Dv"],h = pars["h"],
-                f = pars["f"],tv = pars["tv"], q = pars["q"], TT = pars["TT"], 
-                beta = beta, N_age = N_age, C1 = contacts_ireland[[5]],
+  parms <- list(L = pars["L"], Cv = pars["Cv"], Dv =  pars["Dv"], h = pars["h"],
+                f = pars["f"], tv = pars["tv"], q = pars["q"], TT = pars["TT"], 
+                k = pars["k"], beta = beta, N_age = N_age, C1 = contacts_ireland[[5]],
                 H = contacts_ireland[[1]], linfo = linfo, 
                 intervention_scales = lockdown_information[[3]])
   

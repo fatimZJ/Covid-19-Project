@@ -43,9 +43,66 @@
   # Remove the List containing the Data Objects
   rm(data_sources)
   
-####-- 4. Extra App Data ----------------------------------------------------####
+####-- 4. Extra App Data  --------------------------------------------------####
   
   # Create Default Age Groups
   def_age_groups <- c(paste0(seq(0, 70, 5), " - ", seq(4, 74, 5)), "75+")
   
+  # Change the population data age labels
+  dub_population$agegroup <- def_age_groups
+  irl_population$agegroup <- def_age_groups
+  
+  # Vector of compartment names
+  comp_vec <- c("S", "Ev", "Ip", "IA", "Ii", "It", "Iti", "Iq", "R")
+  
+  # Compartment extract function
+  comp_extract <- function(dat, comp) {
+    dat[grepl(paste0(comp, "_"), names(dat))]
+  }
+  
+  # Summary plotting function
+  summary_plot <- function(dat, xval, comp_vec, group, I_type){
+    
+    # Extract Compartments
+    comps <- Map(comp_extract, comp = comp_vec,
+                 MoreArgs = list(dat = dat))
+    names(comps)[3:8] <- c("I_pr", "I_As", "I_Im", "I_Aw", "I_Is", "I_No")
+    comps$I_Al <- comps$I_pr + comps$I_As + comps$I_Im + 
+      comps$I_Aw + comps$I_Is + comps$I_No
+    comps$I <- comps[[paste0("I_", substr(I_type, start = 1, stop = 2))]]
+    
+    # Sum across desired age groups
+    comp_groups <- lapply(comps[c("S", "Ev", "I", "R")],
+                          "[", i = group)
+    comp_draw <- lapply(comp_groups, rowSums)
+    
+    # Draw the Plot
+    plot_ly(x = ~xval, y = ~comp_draw$S, name = 'Susceptible', type = 'scatter', mode = 'lines',
+            line = list(color = 'rgb(69, 95, 245)')) %>%
+      add_trace(y = ~comp_draw$Ev, name = 'Exposed', mode = 'lines', line = list(color = 'rgb(214, 122, 17)')) %>% 
+      add_trace(y = ~comp_draw$I, name = 'Infected', mode = 'lines', line = list(color = 'rgb(186, 24, 19)')) %>%
+      add_trace(y = ~comp_draw$R, name = 'Removed', mode = 'lines', line = list(color = 'rgb(23, 191, 26)')) %>% 
+      #layout(shapes = shaded_regions()) %>%
+      layout(xaxis = list(title = "Time"), 
+             yaxis = list(title = "Compartment Size"), 
+             title = list(text = "Overall Output"))
+    
+  }
+  
+  comp_plot <- function(dat, xval, comp, group, inp){
+    
+    comp_dat <- dat[grepl(comp, names(dat))][group]
+    
+    ### Draw the Plot
+    p <- plot_ly(x = ~xval, y = NA, type = 'scatter', mode = 'lines')
+    
+    for ( i in seq_along(inp$age_sel) ) {
+      p <- p %>% add_trace(y = comp_dat[[i]], name = inp$age_sel[i], mode = 'lines')
+    }
+    
+    p 
+    
+  }
+  
+  td <- as.Date(Sys.time())
   

@@ -2,17 +2,25 @@
 ##            and interventions (start and end dates)
 
 load_data <- function(data_path = 'data/', county = 'Dublin', 
-  load_pop_data = TRUE, load_contact_matrices = TRUE, load_case_data = TRUE, 
+  load_county_pop_data = TRUE, load_IRL_pop_data = TRUE, 
+  load_contact_matrices = TRUE, load_case_data = TRUE, 
   load_interventions = TRUE) {
   
   # Empty list for output - allows for variable output size
   out <- list()
   
-  # Load Population Data
-  if (isTRUE(load_pop_data)) {
+  # Load County Population Data
+  if (isTRUE(load_county_pop_data)) {
     pop_file <- paste0(data_path, county, '_pop_2019.csv')
     out[[length(out) + 1]] <- readr::read_csv(pop_file, col_types = cols())
-    names(out)[[length(out)]] <- 'population'
+    names(out)[[length(out)]] <- 'dub_population'
+  }
+  
+  # Load County Population Data
+  if (isTRUE(load_IRL_pop_data)) {
+    pop_file <- paste0(data_path, 'Ireland_pop_2019.csv')
+    out[[length(out) + 1]] <- readr::read_csv(pop_file, col_types = cols())[-1]
+    names(out)[[length(out)]] <- 'irl_population'
   }
   
   # Load (Projected) Contact Matrices Data 
