@@ -66,9 +66,9 @@
     # Extract Compartments
     comps <- Map(comp_extract, comp = comp_vec,
                  MoreArgs = list(dat = dat))
-    names(comps)[3:8] <- c("I_pr", "I_As", "I_Im", "I_Aw", "I_Is", "I_No")
-    comps$I_Al <- comps$I_pr + comps$I_As + comps$I_Im + 
-      comps$I_Aw + comps$I_Is + comps$I_No
+    names(comps)[3:8] <- c("I_Pr", "I_As", "I_Im", "I_Aw", "I_Is", "I_No")
+    comps$I_Sy <- comps$I_Im + comps$I_Aw + comps$I_Is + comps$I_No
+    comps$I_Al <- comps$I_Pr + comps$I_As + comps$I_Sy 
     comps$I <- comps[[paste0("I_", substr(I_type, start = 1, stop = 2))]]
     
     # Sum across desired age groups
@@ -82,7 +82,6 @@
       add_trace(y = ~comp_draw$Ev, name = 'Exposed', mode = 'lines', line = list(color = 'rgb(214, 122, 17)')) %>% 
       add_trace(y = ~comp_draw$I, name = 'Infected', mode = 'lines', line = list(color = 'rgb(186, 24, 19)')) %>%
       add_trace(y = ~comp_draw$R, name = 'Removed', mode = 'lines', line = list(color = 'rgb(23, 191, 26)')) %>% 
-      #layout(shapes = shaded_regions()) %>%
       layout(xaxis = list(title = "Time"), 
              yaxis = list(title = "Compartment Size"), 
              title = list(text = "Overall Output"))
@@ -105,4 +104,18 @@
   }
   
   td <- as.Date(Sys.time())
+  
+  # Lockdown Info
+  l_mean <- apply(boot_lockdown_scalars, 2, mean)
+  l_q_025 <- apply(boot_lockdown_scalars, 2, quantile, 0.025)
+  l_q_975 <- apply(boot_lockdown_scalars, 2, quantile, 0.975)
+  
+  interventions_info$l_mean <- l_mean
+  interventions_info$l_q_025 <- l_q_025
+  interventions_info$l_q_975 <- l_q_975
+  
+  linfo_mean <- interventions_info[c(1, 2, 4)]
+  linfo_lower <- interventions_info[c(1, 2, 5)]
+  linfo_upper <- interventions_info[c(1, 2, 6)]
+  
   

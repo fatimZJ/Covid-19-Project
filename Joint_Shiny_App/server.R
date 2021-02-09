@@ -1,7 +1,7 @@
 server <- function(input, output, session) {
   
   ####-- 3. Model Dashboard ------------------------------------------------####
-  xstart <- reactive({
+  xstart_dub <- reactive({
     
     num_group <- nrow(dub_population)
     num_exp <- input$Estart/num_group
@@ -32,6 +32,38 @@ server <- function(input, output, session) {
     
   })
   
+  xstart_irl <- reactive({
+    
+    num_group <- nrow(irl_population)
+    num_exp <- input$Estart/num_group
+    num_inf <- input$Istart/num_group
+    num_rec <- input$Rstart/num_group
+    
+    xstart <- c(irl_population$popage - num_exp - num_inf - num_rec,
+                rep(num_exp, num_group),
+                rep(num_inf, num_group),
+                rep(0, num_group),
+                rep(0, num_group),
+                rep(0, num_group),
+                rep(0, num_group),
+                rep(0, num_group),
+                rep(num_rec, num_group))
+    
+    names(xstart) <- c(paste0('S_',1:num_group),
+                       paste0('Ev_',1:num_group),
+                       paste0('Ip_',1:num_group),
+                       paste0('IA_',1:num_group),
+                       paste0('Ii_',1:num_group),
+                       paste0('It_',1:num_group),
+                       paste0('Iti_',1:num_group),
+                       paste0('Iq_',1:num_group),
+                       paste0('R_',1:num_group))
+    
+    xstart
+    
+  })
+  
+  # Selected Groups ----
   selGroups <- reactive({
     dub_population[[1]] %in% input$age_sel
   })
@@ -67,44 +99,47 @@ server <- function(input, output, session) {
                                    input$TT),
                           contacts_ireland = contacts,
                           dateStart = input$dates[1],
-                          startval = xstart(),
+                          startval = xstart_dub(),
                           POP = dub_population,
                           beta = dub_gotbeta(),
                           tmax = tmax(), 
-                          lockdown_information = NULL)$solution 
+                          lockdown_information = linfo_mean)$solution 
   })
   
   irl_sol <- reactive({
-    #browser()
     SEIR_model_simulation(pars = c(input$L, input$Cv, input$Dv, input$h, 
                                    input$f, input$tv, input$q, input$k,
                                    input$TT),
                           contacts_ireland = contacts,
                           dateStart = input$dates[1],
-                          startval = xstart(),
+                          startval = xstart_irl(),
                           POP = irl_population,
                           beta = irl_gotbeta(),
                           tmax = tmax(), 
-                          lockdown_information = NULL)$solution 
+                          lockdown_information = linfo_mean)$solution 
   })
   
   # Define Shaded Regions for Plots ----
   shaded_regions <- reactive({
     
-    if( is.null(NULL) ) { return(NULL) }
+    if (!input$shade) { return(NULL) }
     
-    max_val <- rowSums(sol()[1, ]) * 1.05
-    scales <- linfo()[[3]]
-    N <- nrow(linfo())
+    raw_scales <- linfo_mean[[3]]
+    scales <- 1 - (raw_scales - min(raw_scales)) / (max(raw_scales) - min(raw_scales))
+    N <- nrow(linfo_mean)
     shaded_list <- vector("list", length = N)
     
     for (i in 1:N) {
       
       shaded_list[[i]] <- list(type = "rect",
                                fillcolor = "gray", line = list(color = "gray"), 
-                               opacity = 0.5 * (1 - scales[i]), x0 = linfo()[[1]][i], 
-                               x1 = linfo()[[2]][i], xref = "x",
-                               y0 = 0, y1 = max_val, yref = "y")
+                               opacity = 0.5 * scales[i], 
+                               x0 = linfo_mean[[1]][i], 
+                               x1 = linfo_mean[[2]][i], xref = "x",
+                               ysizemode = "pixel",
+                               yanchor = 0,
+                               y0 = 0, y1 = 350, yref = "y",
+                               layer = "below")
       
     }
     
@@ -119,20 +154,22 @@ server <- function(input, output, session) {
   
   output$summary_plot_dub <- renderPlotly({
     
-    summary_plot(dub_sol(), xval(), comp_vec, selGroups(), input$I_type)
+    summary_plot(dub_sol(), xval(), comp_vec, selGroups(), input$I_type) %>%
+      layout(shapes = shaded_regions())
     
   })
   
   output$summary_plot_irl <- renderPlotly({
     
-    summary_plot(irl_sol(), xval(), comp_vec, selGroups(), input$I_type)
+    summary_plot(irl_sol(), xval(), comp_vec, selGroups(), input$I_type) %>%
+      layout(shapes = shaded_regions())
     
   })
   
   output$S_age_plot_dub <- renderPlotly({
     
     comp_plot(dub_sol(), xval(), "S_", selGroups(), input) %>% 
-      #layout(shapes = shaded_regions()) %>%
+      layout(shapes = shaded_regions()) %>%
       layout(xaxis = list(title = ""), 
              title = list(text = "Age Breakdown"),
              yaxis = list(title = list(text = "Susceptible",
@@ -143,7 +180,7 @@ server <- function(input, output, session) {
   output$S_age_plot_irl <- renderPlotly({
     
     comp_plot(irl_sol(), xval(), "S_", selGroups(), input) %>% 
-      #layout(shapes = shaded_regions()) %>%
+      layout(shapes = shaded_regions()) %>%
       layout(xaxis = list(title = ""), 
              title = list(text = "Age Breakdown"),
              yaxis = list(title = list(text = "Susceptible",
@@ -155,7 +192,7 @@ server <- function(input, output, session) {
   output$E_age_plot_dub <- renderPlotly({
     
     comp_plot(dub_sol(), xval(), "Ev_", selGroups(), input) %>% 
-      #layout(shapes = shaded_regions()) %>%
+      layout(shapes = shaded_regions()) %>%
       layout(xaxis = list(title = ""), 
              title = list(text = "Age Breakdown"),
              yaxis = list(title = list(text = "Exposed",
@@ -167,7 +204,7 @@ server <- function(input, output, session) {
   output$E_age_plot_irl <- renderPlotly({
     
     comp_plot(irl_sol(), xval(), "Ev_", selGroups(), input) %>% 
-      #layout(shapes = shaded_regions()) %>%
+      layout(shapes = shaded_regions()) %>%
       layout(xaxis = list(title = ""), 
              title = list(text = "Age Breakdown"),
              yaxis = list(title = list(text = "Exposed",
@@ -178,13 +215,20 @@ server <- function(input, output, session) {
   
   output$I_age_plot_dub <- renderPlotly({
     
-    I_Pr <- dub_sol()[grepl('Ip_',names(dub_sol()))]
-    I_As <- dub_sol()[grepl('IA_',names(dub_sol()))]
-    I_Im <- dub_sol()[grepl('Ii_',names(dub_sol()))]
-    I_Aw <- dub_sol()[grepl('It_',names(dub_sol()))]
-    I_Is <- dub_sol()[grepl('Iti_',names(dub_sol()))]
-    I_No <- dub_sol()[grepl('Iq_',names(dub_sol()))]
-    I_Al <- I_Pr + I_As + I_Im + I_Aw + I_Is + I_No
+    Sy <- c("Ii_", "It_", "Iti_", "Iq_")
+    
+    g <- function(x) {
+      res <- numeric(0)
+      for (i in length(x)) {
+        res <- rbind(res, dub_sol()[grepl(x[i],names(dub_sol()))])
+      }
+      res
+    }
+    
+    I_Sy <- g(Sy)
+    I_Pr <- g('Ip_')
+    I_As <- g('IA_')
+    I_Al <- I_Sy + I_Pr + I_As
     I <- get( paste0("I_", substr(input$I_type, start = 1, stop = 2)) )
     
     ### Draw the Plot
@@ -197,21 +241,27 @@ server <- function(input, output, session) {
     p_I %>% layout(shapes = shaded_regions()) %>%
       layout(xaxis = list(title = "Time"), 
              yaxis = list(title = list(text = paste0("Infected: ", input$I_type),
-                                       font = list(color = 'rgb(186, 24, 19)')),
-                          range = c(0, max(I) * 1.01))
+                                       font = list(color = 'rgb(186, 24, 19)')))
       )
     
   })
   
   output$I_age_plot_irl <- renderPlotly({
     
-    I_Pr <- irl_sol()[grepl('Ip_',names(irl_sol()))]
-    I_As <- irl_sol()[grepl('IA_',names(irl_sol()))]
-    I_Im <- irl_sol()[grepl('Ii_',names(irl_sol()))]
-    I_Aw <- irl_sol()[grepl('It_',names(irl_sol()))]
-    I_Is <- irl_sol()[grepl('Iti_',names(irl_sol()))]
-    I_No <- irl_sol()[grepl('Iq_',names(irl_sol()))]
-    I_Al <- I_Pr + I_As + I_Im + I_Aw + I_Is + I_No
+    Sy <- c("Ii_", "It_", "Iti_", "Iq_")
+    
+    g <- function(x) {
+      res <- numeric(0)
+      for (i in length(x)) {
+        res <- rbind(res, irl_sol()[grepl(x[i],names(irl_sol()))])
+      }
+      res
+    }
+    
+    I_Sy <- g(Sy)
+    I_Pr <- g('Ip_')
+    I_As <- g('IA_')
+    I_Al <- I_Sy + I_Pr + I_As
     I <- get( paste0("I_", substr(input$I_type, start = 1, stop = 2)) )
     
     ### Draw the Plot
@@ -224,8 +274,7 @@ server <- function(input, output, session) {
     p_I %>% layout(shapes = shaded_regions()) %>%
       layout(xaxis = list(title = "Time"), 
              yaxis = list(title = list(text = paste0("Infected: ", input$I_type),
-                                       font = list(color = 'rgb(186, 24, 19)')),
-                          range = c(0, max(I) * 1.01))
+                                       font = list(color = 'rgb(186, 24, 19)')))
       )
     
   })
@@ -233,6 +282,7 @@ server <- function(input, output, session) {
   output$R_age_plot_dub <- renderPlotly({
     
     comp_plot(dub_sol(), xval(), "R_", selGroups(), input) %>% 
+      layout(shapes = shaded_regions()) %>%
       layout(xaxis = list(title = "Time"), 
              yaxis = list(title = list(text = "Removed",
                                        font = list(color = 'rgb(23, 191, 26)')))
@@ -242,7 +292,8 @@ server <- function(input, output, session) {
   
   output$R_age_plot_irl <- renderPlotly({
     
-    comp_plot(irl_sol(), xval(), "R_", selGroups(), input) %>% 
+    comp_plot(irl_sol(), xval(), "R_", selGroups(), input) %>%
+      layout(shapes = shaded_regions()) %>%
       layout(xaxis = list(title = "Time"), 
              yaxis = list(title = list(text = "Removed",
                                        font = list(color = 'rgb(23, 191, 26)')))
@@ -254,10 +305,17 @@ server <- function(input, output, session) {
   
   # Placeholder Upper and Lower limits
   N_known <- 13
-  date_place <- td + seq(1-N_known, 55)
-  N_full <- length(date_place)
-  segs <- seq(td, td + 42, 14)
-  text_places <- c(td + 7, seq(td + 21, td + 49, 14))
+  N_full <- 68
+  
+  date_place <- reactive({
+    input$start_date + seq(1-N_known, 55)
+  })
+  segs <- reactive({
+    seq(input$start_date, input$start_date + 42, 14)
+  })
+  text_places <- reactive({
+    c(input$start_date + 7, seq(input$start_date + 21, input$start_date + 49, 14))
+  })
     
   UL <- rnorm(N_full, 450, 25)
   MID <- rnorm(N_full, 300, 25)
@@ -265,7 +323,7 @@ server <- function(input, output, session) {
   
   output$forecast_plot_dub <- renderPlotly({
     
-    p <- plot_ly(x = ~date_place, y = ~UL, name = 'Upper Limit', type = 'scatter', 
+    p <- plot_ly(x = ~date_place(), y = ~UL, name = 'Upper Limit', type = 'scatter', 
             mode = 'lines', line = list(color = 'blue', dash = "dash")) %>%
       add_trace(y = ~LL, name = "Lower Limit", mode = 'lines', 
                 fill = 'tonexty', fillcolor='rgba(70, 136, 242, 0.2)',
@@ -273,24 +331,24 @@ server <- function(input, output, session) {
       add_trace(y = ~MID, name = "Forecast", mode = 'lines',
                 #fill = 'tonexty', fillcolor='rgba(70, 136, 242, 0.2)', 
                 line = list(color = 'red')) %>%
-      add_trace(x = ~date_place[1:N_known], y = ~MID[1:N_known], name = "Forecast2", 
+      add_trace(x = ~date_place()[1:N_known], y = ~MID[1:N_known], name = "Forecast2", 
                 mode = 'lines',
                 line = list(color = 'red', dash = "solid")) %>%
-      add_trace(x = ~date_place[1:N_known], y = ~LL[1:N_known], name = "LL2", 
+      add_trace(x = ~date_place()[1:N_known], y = ~LL[1:N_known], name = "LL2", 
                 mode = 'lines', fill = "none",
                 line = list(color = 'blue', 
                             dash = "solid")) %>%
-      add_trace(x = ~date_place[1:N_known], y = ~UL[1:N_known], name = "UL2", 
+      add_trace(x = ~date_place()[1:N_known], y = ~UL[1:N_known], name = "UL2", 
                 mode = 'lines', fill = "none",
                 line = list(color = 'blue', 
                             dash = "solid")) %>%
-      add_segments(x = segs, xend = segs, y = min(LL), yend = max(UL),
-                   line = list(color = 'black')) %>%
+      add_segments(x = segs(), xend = segs(), y = min(LL), yend = max(UL),
+                   line = list(color = 'black', dash = "solid", width = 0.5)) %>%
       layout(showlegend = FALSE,
              paper_bgcolor='rgb(255,255,255)', plot_bgcolor='rgb(229,229,229)')
     
     for (i in 1:4) {
-      p <- p %>% add_text(x = text_places[i], y = max(UL)*1.1, 
+      p <- p %>% add_text(x = text_places()[i], y = max(UL)*1.1, 
                           text = input[[paste0("res", i)]],
                           textfont = list(color = '#000000', size = 14))
     }

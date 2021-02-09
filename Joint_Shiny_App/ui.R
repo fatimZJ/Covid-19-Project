@@ -1,10 +1,9 @@
 sidebar <- dashboardSidebar(
   sidebarMenu(
     menuItem("Info", tabName = "info", icon = icon("info")),
-    menuItem("SEIR Model Output", tabName = "our_stats", icon = icon("chart-bar")),
-    menuItem("Model Dashboard", tabName = "seir", icon = icon("dashboard")),
+    menuItem("SEIR Model Dashboard", tabName = "seir", icon = icon("dashboard")),
     menuItem("Forecast Settings", tabName = "forecast", icon = icon("wrench")),
-    menuItem("Comparison", tabname = "compare", icon = icon("balance-scale-left"))
+    menuItem("Comparison", tabName = "compare", icon = icon("balance-scale-left"))
   )
 )
 
@@ -18,10 +17,6 @@ body <- dashboardBody(
     tabItem(tabName = "seir", 
             fluidRow(
               box( title = "Inputs", width = 2, solidHeader = TRUE, status = "primary",
-                   selectInput(inputId = "I_type", label = "Type of infected to display:",
-                               choices = list("All", "Asymptomatic", "Pre-symptomatic", "Immediate Isolation", 
-                                              "Awaiting Test Results", "Isolating After Test", "Not Isolating"),
-                               selected = "All"),
                    numericInput(inputId = "R0", label = "Basic Reproduction Number:", min = 0.1, value = 3.7),
                    numericInput(inputId = "L", label = "Latent Period:", min = 0.1, value = 3.7, step = 0.1),
                    numericInput(inputId = "Cv", label = "Incubation Period:", min = 0.1, value = 5.8, step = 0.1),
@@ -40,15 +35,21 @@ body <- dashboardBody(
                    numericInput(inputId = "Estart", label = "Exposed Starting Value:", min = 0, value = 16),
                    numericInput(inputId = "Istart", label = "Infected Starting Value:", min = 0, value = 1),
                    numericInput(inputId = "Rstart", label = "Removed Starting Value:", min = 0, value = 0),
-                   checkboxGroupInput(inputId = "age_sel", label = "Select Ages to Display:", 
-                                      choices = def_age_groups, selected = def_age_groups),
-                   dateRangeInput(inputId = "dates", label = "Time Horizon:", start = as.Date('2020-02-28'), 
+                   selectInput(inputId = "I_type", label = "Type of infected to display:",
+                               choices = list("All", "Symptomatic", "Pre-symptomatic", "Asymptomatic"),
+                               selected = "All"),
+                   dateRangeInput(inputId = "dates", label = "Dates to Display:", start = as.Date('2020-02-28'), 
                                   end = td, language = "en-GB", format = "dd/mm/yyyy"),
+                   checkboxInput(inputId = "shade", label = "Shade Intervention Dates", value = TRUE),
+                   checkboxGroupInput(inputId = "age_sel", label = "Select Ages to Display:", 
+                                      choices = def_age_groups, selected = def_age_groups)
+                   #sliderInput(inputId = "scalar_quantiles", label = "Lockdown Effect Quantiles",
+                   #            min = 0, max = 100, value = c(2.5, 97.5), step = 0.5)
               ),
               tabBox( width = 10, title = "SEIR Model Outputs",
                       tabPanel( title = "Dublin",
                                 fluidRow(
-                                  column(10,
+                                  column(12,
                                          plotlyOutput("summary_plot_dub") %>% 
                                            withSpinner(color = "#0dc5c1", size = 2, hide.ui = FALSE)),
                                   column(6,
@@ -71,7 +72,7 @@ body <- dashboardBody(
                       ),
                       tabPanel(title = "Ireland",
                                fluidRow(
-                                 column(10,
+                                 column(12,
                                         plotlyOutput("summary_plot_irl") %>% 
                                           withSpinner(color = "#0dc5c1", size = 2, hide.ui = FALSE)),
                                  column(6,
@@ -108,32 +109,34 @@ body <- dashboardBody(
               box( title = "Expected Outcome", width = 2, solidHeader = TRUE, status = "danger",
                   h2("Expected Deaths and Costs here"))
               ),
-            box( title = "Compartment:", width = 2, solidHeader = TRUE, status = "warning",
+            box( title = "Display", width = 2, solidHeader = TRUE, status = "warning",
                  selectInput(inputId = "Disp_comp", label = "Compartment:",
-                             choices = list("Susceptible", "Exposed", "Infected:All", 
-                                            "Infected:Asymptomatic", "Infected:Pre-symptomatic", 
-                                            "Infected:Symptomatic", "Removed"),
-                             selected = "Infected:All")
+                             choices = list("Susceptible", "Exposed", "Infected: All", 
+                                            "Infected: Asymptomatic", "Infected: Pre-symptomatic", 
+                                            "Infected: Symptomatic", "Removed"),
+                             selected = "Infected:All"),
+                 dateInput(inputId = "start_date", label = "Start Date:", value = td,
+                           min = as.Date('2020-02-28'), max = td)
                  ),
             box( title = "Restriction Weeks 1 & 2:", width = 2, solidHeader = TRUE, status = "primary",
                  selectInput(inputId = "res1", label = "Restriction:",
-                             choices = list("None", "L1", "L2", "L3", "L4", "L5"),
-                             selected = "None")
+                             choices = interventions_info$policy,
+                             selected = "No Intervention")
                  ),
             box( title = "Restriction Weeks 3 & 4:", width = 2, solidHeader = TRUE, status = "primary",
                  selectInput(inputId = "res2", label = "Restriction:",
-                             choices = list("None", "L1", "L2", "L3", "L4", "L5"),
-                             selected = "None")
+                             choices = interventions_info$policy,
+                             selected = "No Intervention")
             ),
             box( title = "Restriction Weeks 5 & 6:", width = 2, solidHeader = TRUE, status = "primary",
                  selectInput(inputId = "res3", label = "Restriction:",
-                             choices = list("None", "L1", "L2", "L3", "L4", "L5"),
-                             selected = "None")
+                             choices = interventions_info$policy,
+                             selected = "No Intervention")
             ),
             box( title = "Restriction Weeks 7 & 8:", width = 2, solidHeader = TRUE, status = "primary",
                  selectInput(inputId = "res4", label = "Restriction:",
-                             choices = list("None", "L1", "L2", "L3", "L4", "L5"),
-                             selected = "None")
+                             choices = interventions_info$policy,
+                             selected = "No Intervention")
             )
             ),
     
