@@ -11,9 +11,7 @@ body <- dashboardBody(
   tabItems(
     #Tab 1: Info
     tabItem(tabName = "info"),
-    #Tab 2: SEIR Model Output
-    tabItem(tabName = "our_stats"),
-    #Tab 3: Model Dashboard
+    #Tab 2: Model Dashboard
     tabItem(tabName = "seir", 
             fluidRow(
               box( title = "Inputs", width = 2, solidHeader = TRUE, status = "primary",
@@ -32,14 +30,12 @@ body <- dashboardBody(
                    numericInput(inputId = "q", label = "Proportion of Isolated:", min = 0.01, max = 1, value = 0.1,
                                 step = 0.01),
                    numericInput(inputId = "TT", label = "Average Test Result Time:", min = 0.1, value = 7, step = 0.1),
-                   numericInput(inputId = "Estart", label = "Exposed Starting Value:", min = 0, value = 16),
-                   numericInput(inputId = "Istart", label = "Infected Starting Value:", min = 0, value = 1),
-                   numericInput(inputId = "Rstart", label = "Removed Starting Value:", min = 0, value = 0),
+                   tags$hr(),
                    selectInput(inputId = "I_type", label = "Type of infected to display:",
                                choices = list("All", "Symptomatic", "Pre-symptomatic", "Asymptomatic"),
                                selected = "All"),
-                   dateRangeInput(inputId = "dates", label = "Dates to Display:", start = as.Date('2020-02-28'), 
-                                  end = td, language = "en-GB", format = "dd/mm/yyyy"),
+                   dateInput(inputId = "end_date", label = "End Date:", value = td,
+                           min = as.Date('2020-02-29'), max = td),
                    checkboxInput(inputId = "shade", label = "Shade Intervention Dates", value = TRUE),
                    checkboxGroupInput(inputId = "age_sel", label = "Select Ages to Display:", 
                                       choices = def_age_groups, selected = def_age_groups)
@@ -97,50 +93,50 @@ body <- dashboardBody(
               )
               
     )),
-    #Tab 4: Forecast Settings
+    #Tab 3: Forecast Settings
     tabItem(tabName = "forecast",
             fluidRow(
               tabBox( title = "Forecast", width = 10,
                       tabPanel(title = "Dublin",
-                              plotlyOutput("forecast_plot_dub")),
+                              plotlyOutput("forecast_plot_dub") %>%
+                                withSpinner(color = "#0dc5c1", size = 2, hide.ui = FALSE)),
                       tabPanel(title = "Ireland",
-                              plotlyOutput("forecast_plot_irl"))
+                              plotlyOutput("forecast_plot_irl") %>%
+                                withSpinner(color = "#0dc5c1", size = 2, hide.ui = FALSE))
               ),
               box( title = "Expected Outcome", width = 2, solidHeader = TRUE, status = "danger",
                   h2("Expected Deaths and Costs here"))
               ),
             box( title = "Display", width = 2, solidHeader = TRUE, status = "warning",
                  selectInput(inputId = "Disp_comp", label = "Compartment:",
-                             choices = list("Susceptible", "Exposed", "Infected: All", 
-                                            "Infected: Asymptomatic", "Infected: Pre-symptomatic", 
-                                            "Infected: Symptomatic", "Removed"),
+                             choices = list("Susceptible", "Exposed", "All Infected", 
+                                            "Symptomatic Infected", "Pre-symptomatic Infected", 
+                                            "Asymptomatic Infected", "Removed"),
                              selected = "Infected:All"),
-                 dateInput(inputId = "start_date", label = "Start Date:", value = td,
-                           min = as.Date('2020-02-28'), max = td)
+                 dateInput(inputId = "start_date", label = "Start Date (will not change until 'Create Forecast' button is pressed):", 
+                           value = td, min = as.Date('2020-02-29'), max = td)
                  ),
             box( title = "Restriction Weeks 1 & 2:", width = 2, solidHeader = TRUE, status = "primary",
                  selectInput(inputId = "res1", label = "Restriction:",
-                             choices = interventions_info$policy,
-                             selected = "No Intervention")
+                             choices = lockdown_measures)
                  ),
             box( title = "Restriction Weeks 3 & 4:", width = 2, solidHeader = TRUE, status = "primary",
                  selectInput(inputId = "res2", label = "Restriction:",
-                             choices = interventions_info$policy,
-                             selected = "No Intervention")
+                             choices = lockdown_measures)
             ),
             box( title = "Restriction Weeks 5 & 6:", width = 2, solidHeader = TRUE, status = "primary",
                  selectInput(inputId = "res3", label = "Restriction:",
-                             choices = interventions_info$policy,
-                             selected = "No Intervention")
+                             choices = lockdown_measures)
             ),
             box( title = "Restriction Weeks 7 & 8:", width = 2, solidHeader = TRUE, status = "primary",
                  selectInput(inputId = "res4", label = "Restriction:",
-                             choices = interventions_info$policy,
-                             selected = "No Intervention")
-            )
+                             choices = lockdown_measures)
             ),
+            box( title = "Fit Choices", width = 2, solidHeader = TRUE, status = "success", 
+                 actionButton("fit_forecast", label = "Create Forecast", icon = icon("play-circle"))
+            )),
     
-    #Tab 5: Comparison
+    #Tab 4: Comparison
     tabItem(tabName = "compare")
   )
 )

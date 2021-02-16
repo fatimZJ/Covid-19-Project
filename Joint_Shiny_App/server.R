@@ -1,67 +1,6 @@
 server <- function(input, output, session) {
   
-  ####-- 3. Model Dashboard ------------------------------------------------####
-  xstart_dub <- reactive({
-    
-    num_group <- nrow(dub_population)
-    num_exp <- input$Estart/num_group
-    num_inf <- input$Istart/num_group
-    num_rec <- input$Rstart/num_group
-    
-    xstart <- c(dub_population$popage - num_exp - num_inf - num_rec,
-                rep(num_exp, num_group),
-                rep(num_inf, num_group),
-                rep(0, num_group),
-                rep(0, num_group),
-                rep(0, num_group),
-                rep(0, num_group),
-                rep(0, num_group),
-                rep(num_rec, num_group))
-    
-    names(xstart) <- c(paste0('S_',1:num_group),
-                       paste0('Ev_',1:num_group),
-                       paste0('Ip_',1:num_group),
-                       paste0('IA_',1:num_group),
-                       paste0('Ii_',1:num_group),
-                       paste0('It_',1:num_group),
-                       paste0('Iti_',1:num_group),
-                       paste0('Iq_',1:num_group),
-                       paste0('R_',1:num_group))
-    
-    xstart
-    
-  })
-  
-  xstart_irl <- reactive({
-    
-    num_group <- nrow(irl_population)
-    num_exp <- input$Estart/num_group
-    num_inf <- input$Istart/num_group
-    num_rec <- input$Rstart/num_group
-    
-    xstart <- c(irl_population$popage - num_exp - num_inf - num_rec,
-                rep(num_exp, num_group),
-                rep(num_inf, num_group),
-                rep(0, num_group),
-                rep(0, num_group),
-                rep(0, num_group),
-                rep(0, num_group),
-                rep(0, num_group),
-                rep(num_rec, num_group))
-    
-    names(xstart) <- c(paste0('S_',1:num_group),
-                       paste0('Ev_',1:num_group),
-                       paste0('Ip_',1:num_group),
-                       paste0('IA_',1:num_group),
-                       paste0('Ii_',1:num_group),
-                       paste0('It_',1:num_group),
-                       paste0('Iti_',1:num_group),
-                       paste0('Iq_',1:num_group),
-                       paste0('R_',1:num_group))
-    
-    xstart
-    
-  })
+  ####-- 2. Model Dashboard ------------------------------------------------####
   
   # Selected Groups ----
   selGroups <- reactive({
@@ -70,7 +9,13 @@ server <- function(input, output, session) {
   
   # Process Dates ----
   tmax <- reactive({
-    as.numeric( difftime(input$dates[2], input$dates[1], units = "days") )
+    as.numeric( difftime(input$end_date, as.Date("2020-02-29"), units = "days") )
+  })
+  
+  # Intervention correction
+  intinfo2 <- reactive({
+    dat <- intervention_adjust(interventions_info, input$end_date)
+    merge(dat, optim_res, by = "policy")[-1]
   })
   
   # Get Beta Value ----
@@ -98,12 +43,12 @@ server <- function(input, output, session) {
                                    input$f, input$tv, input$q, input$k, 
                                    input$TT),
                           contacts_ireland = contacts,
-                          dateStart = input$dates[1],
-                          startval = xstart_dub(),
+                          dateStart = as.Date("2020-02-29"),
+                          startval = dub_xstart,
                           POP = dub_population,
                           beta = dub_gotbeta(),
                           tmax = tmax(), 
-                          lockdown_information = linfo_mean)$solution 
+                          lockdown_information = intinfo2())$solution 
   })
   
   irl_sol <- reactive({
@@ -111,12 +56,12 @@ server <- function(input, output, session) {
                                    input$f, input$tv, input$q, input$k,
                                    input$TT),
                           contacts_ireland = contacts,
-                          dateStart = input$dates[1],
-                          startval = xstart_irl(),
+                          dateStart = as.Date("2020-02-29"),
+                          startval = irl_xstart,
                           POP = irl_population,
                           beta = irl_gotbeta(),
                           tmax = tmax(), 
-                          lockdown_information = linfo_mean)$solution 
+                          lockdown_information = intinfo2())$solution 
   })
   
   # Define Shaded Regions for Plots ----
@@ -124,9 +69,9 @@ server <- function(input, output, session) {
     
     if (!input$shade) { return(NULL) }
     
-    raw_scales <- linfo_mean[[3]]
+    raw_scales <- intinfo2()[[3]]
     scales <- 1 - (raw_scales - min(raw_scales)) / (max(raw_scales) - min(raw_scales))
-    N <- nrow(linfo_mean)
+    N <- nrow(intinfo2()) 
     shaded_list <- vector("list", length = N)
     
     for (i in 1:N) {
@@ -134,8 +79,8 @@ server <- function(input, output, session) {
       shaded_list[[i]] <- list(type = "rect",
                                fillcolor = "gray", line = list(color = "gray"), 
                                opacity = 0.5 * scales[i], 
-                               x0 = linfo_mean[[1]][i], 
-                               x1 = linfo_mean[[2]][i], xref = "x",
+                               x0 = intinfo2()[[1]][i], 
+                               x1 = intinfo2()[[2]][i], xref = "x",
                                ysizemode = "pixel",
                                yanchor = 0,
                                y0 = 0, y1 = 350, yref = "y",
@@ -149,7 +94,7 @@ server <- function(input, output, session) {
   
   # Create Plots ----
   xval <- reactive({
-    input$dates[1] + dub_sol()$time
+    as.Date("2020-02-29") + dub_sol()$time
   })
   
   output$summary_plot_dub <- renderPlotly({
@@ -301,95 +246,118 @@ server <- function(input, output, session) {
     
   })
   
-  ####-- 4. Forecast Settings ----------------------------------------------####
+  ####-- 3. Forecast Settings ----------------------------------------------####
   
-  # Placeholder Upper and Lower limits
-  N_known <- 13
-  N_full <- 68
+  # tmax
+  tmax_forecast <- reactive({
+    as.numeric( difftime(input$start_date + 55, as.Date('2020-02-29'), units = "days") )
+  })
   
-  date_place <- reactive({
+  # Intervention correction
+  intinfo3 <- reactive({
+    intervention_adjust(interventions_info, input$start_date - 1)
+  })
+  
+  # Lockdown Info
+  linfo_forecast <- reactive({
+    date_start_seq <- seq.Date(input$start_date, input$start_date + 55, 14)
+    chosen_levs <- c(input$res1, input$res2, input$res3, input$res4)
+    lockdown_forecast <- rbind(intinfo3(),
+                               data.frame(start = date_start_seq, 
+                                          end = date_start_seq + 13,
+                                          policy = chosen_levs))
+    optim_dat <- merge(lockdown_forecast, optim_res, by = "policy")
+    merge(optim_dat, boot_scales_t, by = "policy")
+  })
+  
+  # Simulate SEIR Model
+  dub_forecasters <- eventReactive(input$fit_forecast, {
+    
+    tmax <- tmax_forecast()
+    linfo <- linfo_forecast()
+    
+    cl <- makeCluster(n_cores)
+    registerDoParallel(cl)
+    clusterExport(
+               cl, varlist=c("SEIR_model_simulation", "def_pars", 
+                             "contacts", "dub_xstart", "dub_population",
+                             "dub_def_beta", "lsoda", "SEIR_model_D", 
+                             "tmax", "linfo"),
+               envir=environment())
+    
+    All_Runs <- foreach(i = 5:ncol(linfo), .combine = rbind) %dopar% {
+      SEIR_model_simulation(pars = def_pars,
+                            contacts_ireland = contacts,
+                            dateStart = as.Date('2020-02-29'),
+                            startval = dub_xstart,
+                            POP = dub_population,
+                            beta = dub_def_beta,
+                            tmax = tmax, 
+                            lockdown_information = linfo[, c(2:3, i)])$solution
+    }
+    
+    All_Runs <- split(All_Runs, All_Runs$time)
+    UL <- foreach(x = All_Runs, .combine = rbind,
+                  .final = as.data.frame) %dopar% {
+      sapply(x, quantile, probs = 0.975, names = FALSE)
+    }
+    LL <- foreach(x = All_Runs, .combine = rbind,
+                  .final = as.data.frame) %dopar% {
+      sapply(x, quantile, probs = 0.025, names = FALSE)
+    }
+    rm(All_Runs)
+    stopCluster(cl)
+    
+    MID <- SEIR_model_simulation(pars = def_pars,
+                                 contacts_ireland = contacts,
+                                 dateStart = as.Date('2020-02-29'),
+                                 startval = dub_xstart,
+                                 POP = dub_population,
+                                 beta = dub_def_beta,
+                                 tmax = tmax_forecast(), 
+                                 lockdown_information = linfo_forecast()[, 2:4])$solution
+    
+    list(MID = MID, UL = as.data.frame(UL), LL = as.data.frame(LL))
+    
+  })
+
+  dub_out <- reactive({
+    Map(comp_sel, x = dub_forecasters(),
+        MoreArgs = list(y = input$Disp_comp))
+  })
+  
+  date_place <- eventReactive(input$fit_forecast, {
     input$start_date + seq(1-N_known, 55)
   })
-  segs <- reactive({
+  
+  segs <- eventReactive(input$fit_forecast, {
     seq(input$start_date, input$start_date + 42, 14)
   })
-  text_places <- reactive({
-    c(input$start_date + 7, seq(input$start_date + 21, input$start_date + 49, 14))
-  })
-    
-  UL <- rnorm(N_full, 450, 25)
-  MID <- rnorm(N_full, 300, 25)
-  LL <- rnorm(N_full, 150, 25)
   
   output$forecast_plot_dub <- renderPlotly({
     
-    p <- plot_ly(x = ~date_place(), y = ~UL, name = 'Upper Limit', type = 'scatter', 
+    plot_ly(x = ~date_place(), y = ~dub_out()$UL, name = 'Upper Limit', type = 'scatter', 
             mode = 'lines', line = list(color = 'blue', dash = "dash")) %>%
-      add_trace(y = ~LL, name = "Lower Limit", mode = 'lines', 
+      add_trace(y = ~dub_out()$LL, name = "Lower Limit", mode = 'lines', 
                 fill = 'tonexty', fillcolor='rgba(70, 136, 242, 0.2)',
                 line = list(color = 'blue')) %>%
-      add_trace(y = ~MID, name = "Forecast", mode = 'lines',
-                #fill = 'tonexty', fillcolor='rgba(70, 136, 242, 0.2)', 
+      add_trace(y = ~dub_out()$MID, name = "Forecast", mode = 'lines',
                 line = list(color = 'red')) %>%
-      add_trace(x = ~date_place()[1:N_known], y = ~MID[1:N_known], name = "Forecast2", 
+      add_trace(x = ~date_place()[1:N_known], y = ~dub_out()$MID[1:N_known], name = "Forecast", 
                 mode = 'lines',
                 line = list(color = 'red', dash = "solid")) %>%
-      add_trace(x = ~date_place()[1:N_known], y = ~LL[1:N_known], name = "LL2", 
+      add_trace(x = ~date_place()[1:N_known], y = ~dub_out()$LL[1:N_known], name = "Lower Limit", 
                 mode = 'lines', fill = "none",
                 line = list(color = 'blue', 
                             dash = "solid")) %>%
-      add_trace(x = ~date_place()[1:N_known], y = ~UL[1:N_known], name = "UL2", 
+      add_trace(x = ~date_place()[1:N_known], y = ~dub_out()$UL[1:N_known], name = "Upper Limit", 
                 mode = 'lines', fill = "none",
                 line = list(color = 'blue', 
                             dash = "solid")) %>%
-      add_segments(x = segs(), xend = segs(), y = min(LL), yend = max(UL),
+      add_segments(x = segs(), xend = segs(), y = min(dub_out()$LL), yend = max(dub_out()$UL),
                    line = list(color = 'black', dash = "solid", width = 0.5)) %>%
-      layout(showlegend = FALSE,
+      layout(showlegend = FALSE, xaxis = list(title = "Date"), yaxis = list(title = input$Disp_comp),
              paper_bgcolor='rgb(255,255,255)', plot_bgcolor='rgb(229,229,229)')
-    
-    for (i in 1:4) {
-      p <- p %>% add_text(x = text_places()[i], y = max(UL)*1.1, 
-                          text = input[[paste0("res", i)]],
-                          textfont = list(color = '#000000', size = 14))
-    }
-    
-    p
-    
-  })
-  
-  output$forecast_plot_irl <- renderPlotly({
-    
-    p <- plot_ly(x = ~date_place, y = ~UL, name = 'Upper Limit', type = 'scatter', 
-                 mode = 'lines', line = list(color = 'blue', dash = "dash")) %>%
-      add_trace(y = ~LL, name = "Lower Limit", mode = 'lines', 
-                fill = 'tonexty', fillcolor='rgba(70, 136, 242, 0.2)',
-                line = list(color = 'blue')) %>%
-      add_trace(y = ~MID, name = "Forecast", mode = 'lines',
-                #fill = 'tonexty', fillcolor='rgba(70, 136, 242, 0.2)', 
-                line = list(color = 'red')) %>%
-      add_trace(x = ~date_place[1:N_known], y = ~MID[1:N_known], name = "Forecast2", 
-                mode = 'lines',
-                line = list(color = 'red', dash = "solid")) %>%
-      add_trace(x = ~date_place[1:N_known], y = ~LL[1:N_known], name = "LL2", 
-                mode = 'lines', fill = "none",
-                line = list(color = 'blue', 
-                            dash = "solid")) %>%
-      add_trace(x = ~date_place[1:N_known], y = ~UL[1:N_known], name = "UL2", 
-                mode = 'lines', fill = "none",
-                line = list(color = 'blue', 
-                            dash = "solid")) %>%
-      add_segments(x = segs, xend = segs, y = min(LL), yend = max(UL),
-                   line = list(color = 'black')) %>%
-      layout(showlegend = FALSE,
-             paper_bgcolor='rgb(255,255,255)', plot_bgcolor='rgb(229,229,229)')
-    
-    for (i in 1:4) {
-      p <- p %>% add_text(x = text_places[i], y = max(UL)*1.1, 
-                          text = input[[paste0("res", i)]],
-                          textfont = list(color = '#000000', size = 14))
-    }
-    
-    p
     
   })
   

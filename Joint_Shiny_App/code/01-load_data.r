@@ -3,7 +3,7 @@
 
 load_data <- function(data_path = 'data/', county = 'Dublin', 
   load_county_pop_data = TRUE, load_IRL_pop_data = TRUE, 
-  load_contact_matrices = TRUE, load_case_data = TRUE, 
+  load_contact_matrices = TRUE, load_case_data = FALSE, 
   load_interventions = TRUE, load_bootstrapped_scalars = TRUE) {
   
   # Empty list for output - allows for variable output size
@@ -59,6 +59,10 @@ load_data <- function(data_path = 'data/', county = 'Dublin',
     out[[length(out)+1]] <- read_csv(paste0(data_path, 'bootstrapped_scalars.csv'),
                                      col_types = paste(rep("d", 9), collapse = ''))
     names(out)[[length(out)]] <- 'boot_lockdown_scalars'
+    
+    out[[length(out)+1]] <- read_csv(paste0(data_path, 'optim_scalars.csv'),
+                                     col_types = "cd")
+    names(out)[[length(out)]] <- 'optim_res'
   }
   
   return(out)

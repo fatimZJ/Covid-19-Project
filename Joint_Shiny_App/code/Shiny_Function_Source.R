@@ -2,45 +2,40 @@
 SEIR_model_D <- function (t_ind, x, parms) {
   
   # Initialise the time-dependent variables
-  S <- x[grepl('S_',names(x))]
-  Ev <- x[grepl('Ev_',names(x))]
-  Ip <- x[grepl('Ip_',names(x))]
-  IA <- x[grepl('IA_',names(x))]
-  Ii <- x[grepl('Ii_',names(x))]
-  It <- x[grepl('It_',names(x))]
-  Iti <- x[grepl('Iti_',names(x))]
-  Iq <- x[grepl('Iq_',names(x))]
-  R <- x[grepl('R_',names(x))]
+  S <- x[1:16]
+  Ev <- x[17:32]
+  Ip <- x[33:48]
+  IA <- x[49:64]
+  Ii <- x[65:80]
+  It <- x[81:96]
+  Iti <- x[97:112]
+  Iq <- x[113:128]
+  R <- x[129:144]
   
   # Define model parameter values
   L <- parms[["L"]]
-  Cv <- parms[["Cv"]]
+  denom_1 <- parms[["denom_1"]]
+  denom_2 <- parms[["denom_2"]]
   Dv <- parms[["Dv"]]
-  h <- parms[["h"]]
   f <- parms[["f"]]
   k <- parms[["k"]]
   tv <- parms[["tv"]]
   q <- parms[["q"]]
   TT <- parms[["TT"]]
-  beta <- parms[["beta"]]
-  N_age <- parms[["N_age"]]
   linfo <- parms[["linfo"]]
-  intervention_scales <- parms[["intervention_scales"]]
   
-  scale_ind <- (t_ind >= linfo[[1]]) & (t_ind < (linfo[[2]] + 1))
-  
-  C <- parms[["C1"]] * ifelse( !any(scale_ind), 1L, intervention_scales[scale_ind] )
+  C <- parms[["C1"]] * parms[["intervention_scales"]][(t_ind >= linfo[[1]]) & (t_ind < (linfo[[2]] + 1))]
   
   # calculate the number of infections and recoveries between time t_ind and t_ind + dt
-  dSdt <- -S*beta*C%*%(Ip + h*IA + It + Iq + k*Ii + k*Iti)/N_age
+  dSdt <- -S*parms[["beta"]]*C%*%(Ip + parms[["h"]]*IA + It + Iq + k*Ii + k*Iti)/parms[["N_age"]]
   dEvdt <- -Ev/L - dSdt
-  dIpdt <- -Ip/(Cv - L) + (1 - f)*Ev/L
+  dIpdt <- -Ip/denom_1 + (1 - f)*Ev/L
   dIAdt <- -IA/Dv + f*Ev/L
-  dIidt <- -Ii/(Dv - Cv + L) + q*Ip/(Cv - L)
-  dItdt <- -It/TT + tv*Ip/(Cv - L)
-  dItidt <- -Iti/(Dv - Cv + L - TT) + It/TT
-  dIqdt <- -Iq/(Dv - Cv + L) + (1 - q - tv)*Ip/(Cv - L)
-  dRdt <-IA/Dv + Ii/(Dv - Cv + L) + Iq/(Dv - Cv + L) + Iti/(Dv - Cv + L - TT)
+  dIidt <- -Ii/denom_2 + q*Ip/denom_1
+  dItdt <- -It/TT + tv*Ip/denom_1
+  dItidt <- -Iti/(denom_2 - TT) + It/TT
+  dIqdt <- -Iq/denom_2 + (1 - q - tv)*Ip/denom_1
+  dRdt <-IA/Dv + Ii/denom_2 + Iq/denom_2 + Iti/(denom_2 - TT)
   
   list(c(dSdt, dEvdt, dIpdt, dIAdt, dIidt, dItdt, dItidt, dIqdt, dRdt))
   
@@ -58,7 +53,6 @@ SEIR_model_simulation <- function(pars,
 {
   
   ## Load population information
-  p_age <- POP$propage
   N_age <- POP$popage
   
   ## Initialising the compartments
@@ -69,20 +63,18 @@ SEIR_model_simulation <- function(pars,
   times <- seq(from = 0, to = tmax, by = dt)
   dateEnd <- dateStart + (tmax - 1)
   
-  ## Defining model parameters
-  names(pars) <- c("L","Cv","Dv","h","f","tv","q", "k", "TT")
-  
   ## Defining time points at which interventions come in
-  ds <- as.numeric(dateStart)
-  int_begin <- difftime(lockdown_information[[1]], dateStart, units = "days")
-  int_end <- difftime(lockdown_information[[2]], dateStart, units = "days")
-  linfo <- data.frame(c1 = int_begin, c2 = int_end)
+  linfo <- data.frame(c1 = difftime(lockdown_information[[1]], dateStart, units = "days"),
+                      c2 = difftime(lockdown_information[[2]], dateStart, units = "days"))
   
   ## defining all parameters required for solving model equations
-  parms <- list(L = pars["L"], Cv = pars["Cv"], Dv =  pars["Dv"], h = pars["h"],
-                f = pars["f"], tv = pars["tv"], q = pars["q"], TT = pars["TT"], 
-                k = pars["k"], beta = beta, N_age = N_age, C1 = contacts_ireland[[5]],
-                H = contacts_ireland[[1]], linfo = linfo, 
+  L <- pars[1]
+  Cv <- pars[2]
+  Dv <- pars[3]
+  parms <- list(L = L, denom_1 = Cv - L, Dv = Dv, h = pars[4],
+                denom_2 = Dv - Cv + L, f = pars[5], tv = pars[6], 
+                q = pars[7], k = pars[8], TT = pars[9], beta = beta, 
+                N_age = N_age, C1 = contacts_ireland[[5]], linfo = linfo, 
                 intervention_scales = lockdown_information[[3]])
   
   ## Solving the equations and returning result
