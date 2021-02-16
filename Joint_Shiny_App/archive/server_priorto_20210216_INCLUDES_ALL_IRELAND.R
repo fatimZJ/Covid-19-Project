@@ -50,7 +50,20 @@ server <- function(input, output, session) {
                           tmax = tmax(), 
                           lockdown_information = intinfo2())$solution 
   })
-
+  
+  irl_sol <- reactive({
+    SEIR_model_simulation(pars = c(input$L, input$Cv, input$Dv, input$h, 
+                                   input$f, input$tv, input$q, input$k,
+                                   input$TT),
+                          contacts_ireland = contacts,
+                          dateStart = as.Date("2020-02-29"),
+                          startval = irl_xstart,
+                          POP = irl_population,
+                          beta = irl_gotbeta(),
+                          tmax = tmax(), 
+                          lockdown_information = intinfo2())$solution 
+  })
+  
   # Define Shaded Regions for Plots ----
   shaded_regions <- reactive({
     
@@ -91,6 +104,13 @@ server <- function(input, output, session) {
     
   })
   
+  output$summary_plot_irl <- renderPlotly({
+    
+    summary_plot(irl_sol(), xval(), comp_vec, selGroups(), input$I_type) %>%
+      layout(shapes = shaded_regions())
+    
+  })
+  
   output$S_age_plot_dub <- renderPlotly({
     
     comp_plot(dub_sol(), xval(), "S_", selGroups(), input) %>% 
@@ -102,9 +122,33 @@ server <- function(input, output, session) {
              )
   })
   
+  output$S_age_plot_irl <- renderPlotly({
+    
+    comp_plot(irl_sol(), xval(), "S_", selGroups(), input) %>% 
+      layout(shapes = shaded_regions()) %>%
+      layout(xaxis = list(title = ""), 
+             title = list(text = "Age Breakdown"),
+             yaxis = list(title = list(text = "Susceptible",
+                                       font = list(color = 'rgb(69, 95, 245)')))
+      )
+    
+  })
+  
   output$E_age_plot_dub <- renderPlotly({
     
     comp_plot(dub_sol(), xval(), "Ev_", selGroups(), input) %>% 
+      layout(shapes = shaded_regions()) %>%
+      layout(xaxis = list(title = ""), 
+             title = list(text = "Age Breakdown"),
+             yaxis = list(title = list(text = "Exposed",
+                                       font = list(color = 'rgb(214, 122, 17)')))
+      )
+    
+  })
+  
+  output$E_age_plot_irl <- renderPlotly({
+    
+    comp_plot(irl_sol(), xval(), "Ev_", selGroups(), input) %>% 
       layout(shapes = shaded_regions()) %>%
       layout(xaxis = list(title = ""), 
              title = list(text = "Age Breakdown"),
@@ -147,9 +191,53 @@ server <- function(input, output, session) {
     
   })
   
+  output$I_age_plot_irl <- renderPlotly({
+    
+    Sy <- c("Ii_", "It_", "Iti_", "Iq_")
+    
+    g <- function(x) {
+      res <- numeric(0)
+      for (i in length(x)) {
+        res <- rbind(res, irl_sol()[grepl(x[i],names(irl_sol()))])
+      }
+      res
+    }
+    
+    I_Sy <- g(Sy)
+    I_Pr <- g('Ip_')
+    I_As <- g('IA_')
+    I_Al <- I_Sy + I_Pr + I_As
+    I <- get( paste0("I_", substr(input$I_type, start = 1, stop = 2)) )
+    
+    ### Draw the Plot
+    p_I <- plot_ly(x = ~xval(), y = NA, type = 'scatter', mode = 'lines')
+    
+    for ( i in seq_along(input$age_sel) ) {
+      p_I <- p_I %>% add_trace(y = I[[i]], name = input$age_sel[i], mode = 'lines')
+    }
+    
+    p_I %>% layout(shapes = shaded_regions()) %>%
+      layout(xaxis = list(title = "Time"), 
+             yaxis = list(title = list(text = paste0("Infected: ", input$I_type),
+                                       font = list(color = 'rgb(186, 24, 19)')))
+      )
+    
+  })
+  
   output$R_age_plot_dub <- renderPlotly({
     
     comp_plot(dub_sol(), xval(), "R_", selGroups(), input) %>% 
+      layout(shapes = shaded_regions()) %>%
+      layout(xaxis = list(title = "Time"), 
+             yaxis = list(title = list(text = "Removed",
+                                       font = list(color = 'rgb(23, 191, 26)')))
+      )
+    
+  })
+  
+  output$R_age_plot_irl <- renderPlotly({
+    
+    comp_plot(irl_sol(), xval(), "R_", selGroups(), input) %>%
       layout(shapes = shaded_regions()) %>%
       layout(xaxis = list(title = "Time"), 
              yaxis = list(title = list(text = "Removed",
@@ -226,52 +314,18 @@ server <- function(input, output, session) {
                                  startval = dub_xstart,
                                  POP = dub_population,
                                  beta = dub_def_beta,
-                                 tmax = tmax, 
-                                 lockdown_information = linfo[, 2:4])$solution
+                                 tmax = tmax_forecast(), 
+                                 lockdown_information = linfo_forecast()[, 2:4])$solution
     
-    list(MID = MID, UL = UL, LL = LL)
+    list(MID = MID, UL = as.data.frame(UL), LL = as.data.frame(LL))
     
   })
 
   ### Deaths
   output$deaths <- renderTable({
-    deaths <- rep(0, 3)
-    deaths[1] <- sum( comp_deaths(dub_forecasters()$UL) )
-    deaths[2] <- sum( comp_deaths(dub_forecasters()$MID) )
-    deaths[3] <- sum( comp_deaths(dub_forecasters()$LL) )
-    data.frame(Type = c("Upper", "Forecast", "Lower"), Deaths = deaths)
-  }, align = "l", digits = 0)
-  
-  ### Costs
-  output$Cost_12 <- renderText({ 
-    cost <- est_costs$Estimated_Costs[est_costs$Level == input$res1]
-    paste(cost, "million euro")
+    head(iris, 8)[1:2]
   })
   
-  output$Cost_34 <- renderText({ 
-    cost <- est_costs$Estimated_Costs[est_costs$Level == input$res2]
-    paste(cost, "million euro")
-  })
-  
-  output$Cost_56 <- renderText({ 
-    cost <- est_costs$Estimated_Costs[est_costs$Level == input$res3]
-    paste(cost, "million euro")
-  })
-  
-  output$Cost_78 <- renderText({ 
-    cost <- est_costs$Estimated_Costs[est_costs$Level == input$res4]
-    paste(cost, "million euro")
-  })
-  
-  output$TotalCostBox <- renderInfoBox({
-    sel_levs <- data.frame(Level = c(input$res1, input$res2, input$res3, input$res4))
-    sel_costs <- left_join(sel_levs, est_costs, by = "Level")
-    
-    infoBox(title = "Expected Cost", color = "red", icon = icon("euro"),
-            subtitle = "Million Euros", value = sum(sel_costs$Estimated_Costs))
-  })
-  
-  ### Output
   dub_out <- reactive({
     Map(comp_sel, x = dub_forecasters(),
         MoreArgs = list(y = input$Disp_comp))

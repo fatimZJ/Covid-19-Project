@@ -138,14 +138,19 @@
   N_known <- 13
   N_full <- 68
   
-  # Create Forecast Components
-  comp_sel <- function(x, y) {
+  comp_surmise <- function(x) {
     comps <- Map(comp_extract, comp = comp_vec, 
                  MoreArgs = list(dat = x))
     names(comps) <- c("Su", "Ex", "Pr", "As", "I_Im", 
                       "I_Aw", "I_Is", "I_No", "Re")
     comps$Sy <- comps$I_Im + comps$I_Aw + comps$I_Is + comps$I_No
     comps$Al <- comps$Pr + comps$As + comps$Sy
+    comps
+  }
+  
+  # Create Forecast Components
+  comp_sel <- function(x, y) {
+    comps <- comp_surmise(x)
     comps_sel <- comps[[substr(y, start = 1, stop = 2)]]
     N <- nrow(comps_sel)
     rowSums(comps_sel[(N-N_full+1):N, ])
@@ -183,11 +188,32 @@
     sapply(x, quantile, probs = p)
   }
   
+  ### Extract Estimated Deaths
+  comp_deaths <- function(x) {
+    comps <- comp_surmise(x)
+    comps_sel <- comps$Sy
+    N <- nrow(comps_sel)
+    forcast <- (N-N_full+N_known+1):N 
+    
+    ags <- rep(0, 8)
+    ags[1] <- sum(comps_sel[forcast, 1:3])
+    ags[2] <- sum(comps_sel[forcast, 4:5])
+    ags[3] <- sum(comps_sel[forcast, 6:7])
+    ags[4] <- sum(comps_sel[forcast, 8:9])
+    ags[5] <- sum(comps_sel[forcast, 10:11])
+    ags[6] <- sum(comps_sel[forcast, 12:13])
+    ags[7] <- sum(comps_sel[forcast, 14:15])
+    ags[8] <- sum(comps_sel[forcast, 16])
+    
+    ags * est_deaths$Estimated_Deaths
+    
+  }
+  
   ### Parallelisation
-  n_cores <- detectCores()-1
+  #n_cores <- 1
+  n_cores <- max(detectCores()-1, 1)
   
   ### For debugging
   #boot_scales_t <- boot_scales_t[1:11]
-  #boot_lockdown_scalars <- boot_lockdown_scalars[1:10, ]
   
   
