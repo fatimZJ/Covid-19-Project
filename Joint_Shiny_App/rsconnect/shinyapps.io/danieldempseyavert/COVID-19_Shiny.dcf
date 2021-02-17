@@ -5,8 +5,8 @@ account: danieldempseyavert
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 3646772
-bundleId: 4231202
+bundleId: 4237424
 url: https://danieldempseyavert.shinyapps.io/COVID-19_Shiny/
-when: 1613501789.14248
+when: 1613595639.18268
 asMultiple: FALSE
 asStatic: FALSE

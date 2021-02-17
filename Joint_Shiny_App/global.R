@@ -3,27 +3,48 @@
 ####-- 1. Required Libraries -----------------------------------------------####
   
   # List of all required packages for the application to run
-  pkgs <- c('shiny', 'mlbench', 'shinythemes', 'dplyr', 'shinyWidgets',
+  pkgs <- c('shiny', 
+            'mlbench', 'shinythemes', 'dplyr', 'shinyWidgets',
             'ggplot2', 'shinydashboard', 'data.table', 'optimx', 'Matrix',
             'shinycssloaders', 'DT', 'deSolve', 'plotly', 'readr', 'tidyverse',
             'parallel', 'doParallel')
   
+  ### I need to do this to get it working on shinyapps.io
+  library('shiny')
+  library('mlbench') 
+  library('shinythemes')
+  library('dplyr')
+  library('shinyWidgets')
+  library('ggplot2') 
+  library('shinydashboard') 
+  library('data.table') 
+  library('optimx') 
+  library('Matrix')
+  library('shinycssloaders')
+  library('DT')
+  library('deSolve')
+  library('plotly')
+  library('readr')
+  library('tidyverse')
+  library('parallel')
+  library('doParallel')
+  
   # Handles any packages that are not installed, and installs them locally
-  pkgs_to_install <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
-  if (length(pkgs_to_install)) {
-    install.packages(pkgs_to_install)
-  } 
+  #pkgs_to_install <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
+  #if (length(pkgs_to_install)) {
+  #  install.packages(pkgs_to_install)
+  #} 
   
   # Load all packages - continues if all loaded safely, errors if any failures
-  pkg_status <- sapply(pkgs, function(x) {
-    suppressPackageStartupMessages(
-      invisible(require(x, character.only = TRUE))
-    )}
-  )
-  
-  if (sum(pkg_status) != length(pkgs)) {
-    stop("Error loading some of the packages required - please check!")
-  }
+  #pkg_status <- sapply(pkgs, function(x) {
+  #  suppressPackageStartupMessages(
+  #    invisible(library(x, character.only = TRUE))
+  #  )}
+  #)
+  #
+  #if (sum(pkg_status) != length(pkgs)) {
+  #  stop("Error loading some of the packages required - please check!")
+  #}
 
 ####-- 2. Required Functions -----------------------------------------------####
   
@@ -190,6 +211,7 @@
   
   ### Extract Estimated Deaths
   comp_deaths <- function(x) {
+    
     comps <- comp_surmise(x)
     comps_sel <- comps$Sy
     N <- nrow(comps_sel)
