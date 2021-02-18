@@ -3,30 +3,21 @@
 ####-- 1. Required Libraries -----------------------------------------------####
   
   # List of all required packages for the application to run
-  pkgs <- c('shiny', 
-            'mlbench', 'shinythemes', 'dplyr', 'shinyWidgets',
-            'ggplot2', 'shinydashboard', 'data.table', 'optimx', 'Matrix',
-            'shinycssloaders', 'DT', 'deSolve', 'plotly', 'readr', 'tidyverse',
-            'parallel', 'doParallel')
+  pkgs <- c('shiny',  'shinythemes', 'dplyr', 'shinyWidgets',
+            'shinydashboard', 'Matrix', 'shinycssloaders', 'deSolve', 
+            'plotly', 'tidyverse', 'doParallel')
   
   ### I need to do this to get it working on shinyapps.io
   library('shiny')
-  library('mlbench') 
   library('shinythemes')
   library('dplyr')
   library('shinyWidgets')
-  library('ggplot2') 
   library('shinydashboard') 
-  library('data.table') 
-  library('optimx') 
   library('Matrix')
   library('shinycssloaders')
-  library('DT')
   library('deSolve')
   library('plotly')
-  library('readr')
   library('tidyverse')
-  library('parallel')
   library('doParallel')
   
   # Handles any packages that are not installed, and installs them locally
@@ -70,7 +61,7 @@
   
   # Create Default Age Groups
   def_age_groups <- c(paste0(seq(0, 70, 5), " - ", seq(4, 74, 5)), "75+")
-  
+  forecast_age_groups <- c("0 - 14", paste0(seq(15, 65, 10), " - ", seq(24, 74, 10)), "75+") 
   # Change the population data age labels
   dub_population$agegroup <- def_age_groups
   irl_population$agegroup <- def_age_groups
@@ -170,11 +161,12 @@
   }
   
   # Create Forecast Components
-  comp_sel <- function(x, y) {
+  comp_sel <- function(x, y, z = 1:16) {
     comps <- comp_surmise(x)
     comps_sel <- comps[[substr(y, start = 1, stop = 2)]]
     N <- nrow(comps_sel)
-    rowSums(comps_sel[(N-N_full+1):N, ])
+    if (length(z) == 1) { return(comps_sel[(N-N_full+1):N, z]) }
+    rowSums(comps_sel[(N-N_full+1):N, z])
   }
   
   intervention_adjust <- function(dat, x) {

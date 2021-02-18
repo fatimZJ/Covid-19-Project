@@ -170,6 +170,21 @@ server <- function(input, output, session) {
     intervention_adjust(interventions_info, input$start_date - 1)
   })
   
+  # Selecting ages
+  age_sel_fc <- reactive({
+    age_vec <- numeric(0)
+    if ("0 - 14" %in% input$forecast_age_sel) {age_vec <- 1:3}
+    if ("15 - 24" %in% input$forecast_age_sel) {age_vec <- c(age_vec, 4:5)}
+    if ("25 - 34" %in% input$forecast_age_sel) {age_vec <- c(age_vec, 6:7)}
+    if ("35 - 44" %in% input$forecast_age_sel) {age_vec <- c(age_vec, 8:9)}
+    if ("45 - 54" %in% input$forecast_age_sel) {age_vec <- c(age_vec, 10:11)}
+    if ("55 - 64" %in% input$forecast_age_sel) {age_vec <- c(age_vec, 12:13)}
+    if ("65 - 74" %in% input$forecast_age_sel) {age_vec <- c(age_vec, 14:15)}
+    if ("75+" %in% input$forecast_age_sel) {age_vec <- c(age_vec, 16)}
+    age_small_vec <- which(forecast_age_groups %in% input$forecast_age_sel)
+    list(large_age_vec = age_vec, small_age_vec = age_small_vec)
+  })
+  
   # Lockdown Info
   linfo_forecast <- reactive({
     date_start_seq <- seq.Date(input$start_date, input$start_date + 55, 14)
@@ -233,12 +248,24 @@ server <- function(input, output, session) {
     
   })
 
+  sel_deaths <- eventReactive(input$fit_forecast, {
+    UL <- comp_deaths(dub_forecasters()$UL)
+    MID <- comp_deaths(dub_forecasters()$MID)
+    LL <- comp_deaths(dub_forecasters()$LL) 
+    data.frame(UL = UL, MID = MID, LL = LL, 
+               row.names = forecast_age_groups)
+  })
+    
+  sel_deaths_age_groups <- reactive({
+    sel_deaths()[age_sel_fc()$small_age_vec, ]
+  })
+  
   ### Deaths
   output$deaths <- renderTable({
     deaths <- rep(0, 3)
-    deaths[1] <- sum( comp_deaths(dub_forecasters()$UL) )
-    deaths[2] <- sum( comp_deaths(dub_forecasters()$MID) )
-    deaths[3] <- sum( comp_deaths(dub_forecasters()$LL) )
+    deaths[1] <- sum( sel_deaths_age_groups()$UL )
+    deaths[2] <- sum( sel_deaths_age_groups()$MID )
+    deaths[3] <- sum( sel_deaths_age_groups()$LL )
     data.frame(Type = c("Upper", "Forecast", "Lower"), Deaths = deaths)
   }, align = "l", digits = 0)
   
@@ -274,7 +301,7 @@ server <- function(input, output, session) {
   ### Output
   dub_out <- reactive({
     Map(comp_sel, x = dub_forecasters(),
-        MoreArgs = list(y = input$Disp_comp))
+        MoreArgs = list(y = input$Disp_comp, z = age_sel_fc()$large_age_vec))
   })
   
   date_place <- eventReactive(input$fit_forecast, {
@@ -307,8 +334,21 @@ server <- function(input, output, session) {
                             dash = "solid")) %>%
       add_segments(x = segs(), xend = segs(), y = min(dub_out()$LL), yend = max(dub_out()$UL),
                    line = list(color = 'black', dash = "solid", width = 0.5)) %>%
-      layout(showlegend = FALSE, xaxis = list(title = "Date"), yaxis = list(title = input$Disp_comp),
+      layout(showlegend = FALSE, xaxis = list(title = "Date"), 
+             yaxis = list(title = input$Disp_comp, range = c(0, max(dub_out()$UL))),
              paper_bgcolor='rgb(255,255,255)', plot_bgcolor='rgb(229,229,229)')
+    
+  })
+  
+  output$forecast_exp_deaths <- renderPlotly({
+    
+    deaths <- as.data.frame(sel_deaths())[age_sel_fc()$small_age_vec, ]
+    xax <- forecast_age_groups[age_sel_fc()$small_age_vec]
+    
+    plot_ly(x = xax, y = deaths$LL, type = 'bar', name = 'Lower') %>%
+      add_trace(y = deaths$MID, name = 'Forecast') %>%
+      add_trace(y = deaths$UL, name = 'Upper') %>%
+      layout(yaxis = list(title = 'Expected Deaths'), xaxis = list(title = 'Age Groups'))
     
   })
   
