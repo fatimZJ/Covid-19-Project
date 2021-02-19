@@ -11,7 +11,24 @@ body <- dashboardBody(
   tabItems(
     #Tab 1: Info
     tabItem(tabName = "info",
-            h2("Explanations and info will be displayed in this tab.")),
+            box(title = "About This Application", solidHeader = TRUE,
+                status = "primary", width = 12,
+              textOutput("General_Intro"),
+              uiOutput("linky")
+            ),
+            box(title = "Model Dashboard Tab", solidHeader = TRUE,
+                status = "primary", width = 12,
+              textOutput("Mod_Dash_Tab"),
+            ),
+            box(title = "Model Forecast Tab", solidHeader = TRUE,
+                status = "primary", width = 12,
+              textOutput("Mod_Fore_Tab"),
+            ),
+            box(title = "Citation", solidHeader = TRUE,
+                status = "primary", width = 12,
+              textOutput("Citation"),
+            )
+    ),
     #Tab 2: Model Dashboard
     tabItem(tabName = "seir", 
             fluidRow(
@@ -84,7 +101,7 @@ body <- dashboardBody(
                              selected = "Infected:All"),
                  dateInput(inputId = "start_date", label = "Start Date:", 
                            value = td, min = as.Date('2020-02-29'), max = td),
-                 checkboxGroupInput(inputId = "forecast_age_sel", label = "Select Ages to Display:", 
+                 checkboxGroupInput(inputId = "forecast_age_sel", label = "Age Groups:", 
                                       choices = forecast_age_groups, selected = forecast_age_groups)
                  )
             ),

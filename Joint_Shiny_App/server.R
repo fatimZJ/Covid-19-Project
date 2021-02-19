@@ -1,5 +1,28 @@
 server <- function(input, output, session) {
   
+  ####-- 1. Info ------------------------------------------------####
+  
+  url <- a("Pre-print", href="https://www.google.com/")
+  output$linky <- renderUI({
+    tagList("Link to pre-print: (currently just links to google homepage)", url)
+  })
+  
+  output$General_Intro <- renderText({
+    "Foo Bar."
+  })
+  
+  output$Mod_Dash_Tab <- renderText({
+    "Foo Bar."
+  })
+  
+  output$Mod_Fore_Tab <- renderText({
+    "Foo Bar."
+  })
+  
+  output$Citation <- renderText({
+    "Foo Bar."
+  })
+  
   ####-- 2. Model Dashboard ------------------------------------------------####
   
   # Selected Groups ----
@@ -320,10 +343,10 @@ server <- function(input, output, session) {
                 fill = 'tonexty', fillcolor='rgba(70, 136, 242, 0.2)',
                 line = list(color = 'blue')) %>%
       add_trace(y = ~dub_out()$MID, name = "Forecast", mode = 'lines',
-                line = list(color = 'red')) %>%
+                line = list(color = 'darkorange')) %>%
       add_trace(x = ~date_place()[1:N_known], y = ~dub_out()$MID[1:N_known], name = "Forecast", 
                 mode = 'lines',
-                line = list(color = 'red', dash = "solid")) %>%
+                line = list(color = 'darkorange', dash = "solid")) %>%
       add_trace(x = ~date_place()[1:N_known], y = ~dub_out()$LL[1:N_known], name = "Lower Limit", 
                 mode = 'lines', fill = "none",
                 line = list(color = 'blue', 
@@ -345,9 +368,9 @@ server <- function(input, output, session) {
     deaths <- as.data.frame(sel_deaths())[age_sel_fc()$small_age_vec, ]
     xax <- forecast_age_groups[age_sel_fc()$small_age_vec]
     
-    plot_ly(x = xax, y = deaths$LL, type = 'bar', name = 'Lower') %>%
+    plot_ly(x = xax, y = deaths$UL, type = 'bar', name = 'Upper') %>%
       add_trace(y = deaths$MID, name = 'Forecast') %>%
-      add_trace(y = deaths$UL, name = 'Upper') %>%
+      add_trace(y = deaths$LL, name = 'Lower') %>%
       layout(yaxis = list(title = 'Expected Deaths'), xaxis = list(title = 'Age Groups'))
     
   })
