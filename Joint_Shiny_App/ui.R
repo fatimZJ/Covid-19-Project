@@ -1,27 +1,38 @@
 sidebar <- dashboardSidebar(
   sidebarMenu(
     menuItem("Info", tabName = "info", icon = icon("info")),
-    menuItem("SEIR Model Output", tabName = "our_stats", icon = icon("chart-bar")),
-    menuItem("Model Dashboard", tabName = "seir", icon = icon("dashboard")),
-    menuItem("Forecast Settings", tabName = "forecast", icon = icon("wrench")),
-    menuItem("Comparison", tabname = "compare", icon = icon("balance-scale-left"))
+    menuItem("SEIR Model Dashboard", tabName = "seir", icon = icon("dashboard")),
+    menuItem("Forecast Settings", tabName = "forecast", icon = icon("wrench"))
+    #menuItem("Comparison", tabName = "compare", icon = icon("balance-scale-left"))
   )
 )
 
 body <- dashboardBody(
   tabItems(
     #Tab 1: Info
-    tabItem(tabName = "info"),
-    #Tab 2: SEIR Model Output
-    tabItem(tabName = "our_stats"),
-    #Tab 3: Model Dashboard
+    tabItem(tabName = "info",
+            box(title = "About This Application", solidHeader = TRUE,
+                status = "primary", width = 12,
+              textOutput("General_Intro"),
+              uiOutput("linky")
+            ),
+            box(title = "Model Dashboard Tab", solidHeader = TRUE,
+                status = "primary", width = 12,
+              textOutput("Mod_Dash_Tab"),
+            ),
+            box(title = "Model Forecast Tab", solidHeader = TRUE,
+                status = "primary", width = 12,
+              textOutput("Mod_Fore_Tab"),
+            ),
+            box(title = "Citation", solidHeader = TRUE,
+                status = "primary", width = 12,
+              textOutput("Citation"),
+            )
+    ),
+    #Tab 2: Model Dashboard
     tabItem(tabName = "seir", 
             fluidRow(
-              box( title = "Inputs", width = 2, solidHeader = TRUE, status = "primary",
-                   selectInput(inputId = "I_type", label = "Type of infected to display:",
-                               choices = list("All", "Asymptomatic", "Pre-symptomatic", "Immediate Isolation", 
-                                              "Awaiting Test Results", "Isolating After Test", "Not Isolating"),
-                               selected = "All"),
+              box( title = "Inputs", width = 2, solidHeader = TRUE, status = "warning",
                    numericInput(inputId = "R0", label = "Basic Reproduction Number:", min = 0.1, value = 3.7),
                    numericInput(inputId = "L", label = "Latent Period:", min = 0.1, value = 3.7, step = 0.1),
                    numericInput(inputId = "Cv", label = "Incubation Period:", min = 0.1, value = 5.8, step = 0.1),
@@ -37,18 +48,20 @@ body <- dashboardBody(
                    numericInput(inputId = "q", label = "Proportion of Isolated:", min = 0.01, max = 1, value = 0.1,
                                 step = 0.01),
                    numericInput(inputId = "TT", label = "Average Test Result Time:", min = 0.1, value = 7, step = 0.1),
-                   numericInput(inputId = "Estart", label = "Exposed Starting Value:", min = 0, value = 16),
-                   numericInput(inputId = "Istart", label = "Infected Starting Value:", min = 0, value = 1),
-                   numericInput(inputId = "Rstart", label = "Removed Starting Value:", min = 0, value = 0),
+                   tags$hr(),
+                   selectInput(inputId = "I_type", label = "Type of infected to display:",
+                               choices = list("All", "Symptomatic", "Pre-symptomatic", "Asymptomatic"),
+                               selected = "All"),
+                   dateInput(inputId = "end_date", label = "End Date:", value = td,
+                           min = as.Date('2020-02-29'), max = td),
+                   checkboxInput(inputId = "shade", label = "Shade Intervention Dates", value = TRUE),
                    checkboxGroupInput(inputId = "age_sel", label = "Select Ages to Display:", 
-                                      choices = def_age_groups, selected = def_age_groups),
-                   dateRangeInput(inputId = "dates", label = "Time Horizon:", start = as.Date('2020-02-28'), 
-                                  end = td, language = "en-GB", format = "dd/mm/yyyy"),
+                                      choices = def_age_groups, selected = def_age_groups)
               ),
-              tabBox( width = 10, title = "SEIR Model Outputs",
-                      tabPanel( title = "Dublin",
+              box( width = 10, title = "Dublin SEIR Model Outputs", solidHeader = TRUE,
+                   status = "primary",
                                 fluidRow(
-                                  column(10,
+                                  column(12,
                                          plotlyOutput("summary_plot_dub") %>% 
                                            withSpinner(color = "#0dc5c1", size = 2, hide.ui = FALSE)),
                                   column(6,
@@ -69,76 +82,69 @@ body <- dashboardBody(
                                   )
                                 )
                       ),
-                      tabPanel(title = "Ireland",
-                               fluidRow(
-                                 column(10,
-                                        plotlyOutput("summary_plot_irl") %>% 
-                                          withSpinner(color = "#0dc5c1", size = 2, hide.ui = FALSE)),
-                                 column(6,
-                                        plotlyOutput("S_age_plot_irl") %>% 
-                                          withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
-                                 ),
-                                 column(6, 
-                                        plotlyOutput("E_age_plot_irl") %>% 
-                                          withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
-                                 ),
-                                 column(6, 
-                                        plotlyOutput("I_age_plot_irl") %>% 
-                                          withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
-                                 ),
-                                 column(6, 
-                                        plotlyOutput("R_age_plot_irl") %>% 
-                                          withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
-                                 )
-                               )
+                      
                       )
               
-              )
-              
-    )),
-    #Tab 4: Forecast Settings
+    ),
+    #Tab 3: Forecast Settings
     tabItem(tabName = "forecast",
             fluidRow(
-              tabBox( title = "Forecast", width = 10,
-                      tabPanel(title = "Dublin",
-                              plotlyOutput("forecast_plot_dub")),
-                      tabPanel(title = "Ireland",
-                              plotlyOutput("forecast_plot_irl"))
-              ),
-              box( title = "Expected Outcome", width = 2, solidHeader = TRUE, status = "danger",
-                  h2("Expected Deaths and Costs here"))
-              ),
-            box( title = "Compartment:", width = 2, solidHeader = TRUE, status = "warning",
+              box( title = "Dublin Forecast", width = 10, solidHeader = TRUE,
+                   status = "primary",
+                   plotlyOutput("forecast_plot_dub") %>%
+                                withSpinner(color = "#0dc5c1", size = 2, hide.ui = FALSE)),
+              box( title = "Display", width = 2, solidHeader = TRUE, status = "warning",
                  selectInput(inputId = "Disp_comp", label = "Compartment:",
-                             choices = list("Susceptible", "Exposed", "Infected:All", 
-                                            "Infected:Asymptomatic", "Infected:Pre-symptomatic", 
-                                            "Infected:Symptomatic", "Removed"),
-                             selected = "Infected:All")
-                 ),
-            box( title = "Restriction Weeks 1 & 2:", width = 2, solidHeader = TRUE, status = "primary",
-                 selectInput(inputId = "res1", label = "Restriction:",
-                             choices = list("None", "L1", "L2", "L3", "L4", "L5"),
-                             selected = "None")
-                 ),
-            box( title = "Restriction Weeks 3 & 4:", width = 2, solidHeader = TRUE, status = "primary",
-                 selectInput(inputId = "res2", label = "Restriction:",
-                             choices = list("None", "L1", "L2", "L3", "L4", "L5"),
-                             selected = "None")
+                             choices = list("Susceptible", "Exposed", "All Infected", 
+                                            "Symptomatic Infected", "Pre-symptomatic Infected", 
+                                            "Asymptomatic Infected", "Removed"),
+                             selected = "Infected:All"),
+                 dateInput(inputId = "start_date", label = "Start Date:", 
+                           value = td, min = as.Date('2020-02-29'), max = td),
+                 checkboxGroupInput(inputId = "forecast_age_sel", label = "Age Groups:", 
+                                      choices = forecast_age_groups, selected = forecast_age_groups)
+                 )
             ),
-            box( title = "Restriction Weeks 5 & 6:", width = 2, solidHeader = TRUE, status = "primary",
-                 selectInput(inputId = "res3", label = "Restriction:",
-                             choices = list("None", "L1", "L2", "L3", "L4", "L5"),
-                             selected = "None")
+            fluidRow(
+              infoBox("", "Select lockdown levels:", 
+                      icon = icon("chevron-right"), width = 2, fill = TRUE),
+              box( title = "Restriction Weeks 1 & 2:", width = 2, solidHeader = TRUE, status = "info",
+                   selectInput(inputId = "res1", label = "Restriction:",
+                               choices = lockdown_measures),
+                   textOutput("Cost_12")
+                   ),
+              box( title = "Restriction Weeks 3 & 4:", width = 2, solidHeader = TRUE, status = "info",
+                   selectInput(inputId = "res2", label = "Restriction:",
+                               choices = lockdown_measures),
+                   textOutput("Cost_34")
+              ),
+              box( title = "Restriction Weeks 5 & 6:", width = 2, solidHeader = TRUE, status = "info",
+                   selectInput(inputId = "res3", label = "Restriction:",
+                               choices = lockdown_measures),
+                   textOutput("Cost_56")
+              ),
+              box( title = "Restriction Weeks 7 & 8:", width = 2, solidHeader = TRUE, status = "info",
+                   selectInput(inputId = "res4", label = "Restriction:",
+                               choices = lockdown_measures),
+                   textOutput("Cost_78")
+              ),
+              box( title = "Fit Choices", width = 2, solidHeader = TRUE, status = "success", 
+                   actionButton("fit_forecast", label = "Create Forecast", icon = icon("play-circle"))
+              )
             ),
-            box( title = "Restriction Weeks 7 & 8:", width = 2, solidHeader = TRUE, status = "primary",
-                 selectInput(inputId = "res4", label = "Restriction:",
-                             choices = list("None", "L1", "L2", "L3", "L4", "L5"),
-                             selected = "None")
+            fluidRow(
+              box( title = "Expected Deaths by Age Group", width = 10, solidHeader = TRUE,
+                   status = "danger",
+                   plotlyOutput("forecast_exp_deaths") %>%
+                                withSpinner(color = "#0dc5c1", size = 2, hide.ui = FALSE)),
+              box( title = "Expected Deaths", width = 2, solidHeader = TRUE, status = "danger",
+                     tableOutput('deaths') ),
+              infoBoxOutput('TotalCostBox', width = 2)
             )
-            ),
+    )
     
-    #Tab 5: Comparison
-    tabItem(tabName = "compare")
+    #Tab 4: Comparison
+    #tabItem(tabName = "compare")
   )
 )
 
