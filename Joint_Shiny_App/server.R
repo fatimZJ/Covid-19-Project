@@ -2,25 +2,36 @@ server <- function(input, output, session) {
   
   ####-- 1. Info ------------------------------------------------####
   
-  url <- a("Pre-print", href="https://www.google.com/")
-  output$linky <- renderUI({
-    tagList("Link to pre-print: (currently just links to google homepage)", url)
+  pp_url <- a("Pre-print", href="https://www.google.com/")
+  output$pp_link <- renderUI({
+    tagList("This webpage was created as supplemental material for the following research paper (currently just links to google homepage):", 
+            pp_url)
+  })
+  
+  sfi_url <- a("SFI Homepage", href="https://www.sfi.ie/")
+  output$sfi_link <- renderUI({
+    tagList(sfi_url)
   })
   
   output$General_Intro <- renderText({
-    "Foo Bar."
+    "This webpage allows users to interact with an age structured SEIR model for modelling COVID-19 case counts in Ireland.
+    The numbers are based on the SEIR model and should only be considered a possible projection."
   })
   
   output$Mod_Dash_Tab <- renderText({
-    "Foo Bar."
+    "The model dashboard tab shows the current fit to the case count data updated every week (?). 
+    The widgets on the left hand side of the page allow users to alter the model to examine the sensitivity of parameter choices."
   })
   
   output$Mod_Fore_Tab <- renderText({
-    "Foo Bar."
+    "The model forecast tab allows users to input lockdown settings for the next 8 weeks and examine the
+    expected differences in deaths and cost to the economy. Once the date and lockdown selctions are made,
+    the forecast can be computed by clicking the 'forecast choice' button. It will take a few moments for
+    the forecast to compute."
   })
   
-  output$Citation <- renderText({
-    "Foo Bar."
+  output$Acknowledgement <- renderText({
+    "This research was funded by Science Foundation Ireland (SFI)."
   })
   
   ####-- 2. Model Dashboard ------------------------------------------------####
