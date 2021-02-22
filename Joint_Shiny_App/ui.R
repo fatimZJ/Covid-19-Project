@@ -1,9 +1,10 @@
+### UI for Shiny App
+
 sidebar <- dashboardSidebar(
   sidebarMenu(
     menuItem("Info", tabName = "info", icon = icon("info")),
     menuItem("SEIR Model Dashboard", tabName = "seir", icon = icon("dashboard")),
     menuItem("Forecast Settings", tabName = "forecast", icon = icon("wrench"))
-    #menuItem("Comparison", tabName = "compare", icon = icon("balance-scale-left"))
   )
 )
 
@@ -144,9 +145,6 @@ body <- dashboardBody(
               infoBoxOutput('TotalCostBox', width = 2)
             )
     )
-    
-    #Tab 4: Comparison
-    #tabItem(tabName = "compare")
   )
 )
 

@@ -1,3 +1,5 @@
+### Server for Shiny App
+
 server <- function(input, output, session) {
   
   ####-- 1. Info ------------------------------------------------####
@@ -15,7 +17,8 @@ server <- function(input, output, session) {
   
   output$General_Intro <- renderText({
     "This webpage allows users to interact with an age structured SEIR model for modelling COVID-19 case counts in Ireland.
-    The numbers are based on the SEIR model and should only be considered a possible projection."
+    These models are sensitive to certain assumptions regarding COVID-19 and so these numbers should only be considered an 
+    uncertain projection."
   })
   
   output$Mod_Dash_Tab <- renderText({
@@ -26,7 +29,7 @@ server <- function(input, output, session) {
   output$Mod_Fore_Tab <- renderText({
     "The model forecast tab allows users to input lockdown settings for the next 8 weeks and examine the
     expected differences in deaths and cost to the economy. Once the date and lockdown selctions are made,
-    the forecast can be computed by clicking the 'forecast choice' button. It will take a few moments for
+    the forecast can be computed by clicking the 'Create Forecast' button. It will take a few moments for
     the forecast to compute."
   })
   
