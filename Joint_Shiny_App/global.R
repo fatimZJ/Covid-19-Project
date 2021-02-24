@@ -2,15 +2,14 @@
 
 ####-- 1. Required Libraries -----------------------------------------------####
   
-  # List of all required packages for the application to run
+  ### List of all required packages for the application to run
   pkgs <- c('shiny',  'shinythemes', 'dplyr', 'shinyWidgets',
             'shinydashboard', 'Matrix', 'shinycssloaders', 'deSolve', 
             'plotly', 'tidyverse', 'doParallel')
   
-  ### I need to do this to get it working on shinyapps.io
+  ### Need to do this to get it working on shinyapps.io
   library('shiny')
   library('shinythemes')
-  library('dplyr')
   library('shinyWidgets')
   library('shinydashboard') 
   library('Matrix')
@@ -20,7 +19,7 @@
   library('tidyverse')
   library('doParallel')
   
-  # Handles any packages that are not installed, and installs them locally
+  ### Handles any packages that are not installed, and installs them locally
   #pkgs_to_install <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
   #if (length(pkgs_to_install)) {
   #  install.packages(pkgs_to_install)
@@ -39,195 +38,89 @@
 
 ####-- 2. Required Functions -----------------------------------------------####
   
-  # Locate all files in the code directory
+  ### Locate all files in the code directory
   func_files <- list.files(path = 'code', full.names = TRUE)
   
-  # Load all function files in the code directory
+  ### Load all function files in the code directory
   #func_status <- sapply(func_files, source)
   sapply(func_files, source)
   
 ####-- 3. Required Data ----------------------------------------------------####
   
-  # Load Data Objects as a List
+  ### Load Data Objects as a List
   data_sources <- load_data(data_path = 'data/', county = 'Dublin')
   
-  # Create Data Frames from the Data Object List
+  ### Create Data Frames from the Data Object List
   list2env(data_sources, envir = .GlobalEnv)
   
-  # Remove the List containing the Data Objects
+  ### Remove the List containing the Data Objects
   rm(data_sources)
   
 ####-- 4. Extra App Data  --------------------------------------------------####
   
-  # Create Default Age Groups
+  ### Number of workers to parallelise over
+  #n_cores <- 1
+  n_cores <- 3
+  #n_cores <- max(detectCores()-1, 1)
+  
+  ### Create Default Age Groups
   def_age_groups <- c(paste0(seq(0, 70, 5), " - ", seq(4, 74, 5)), "75+")
   forecast_age_groups <- c("0 - 14", paste0(seq(15, 65, 10), " - ", seq(24, 74, 10)), "75+") 
-  # Change the population data age labels
   dub_population$agegroup <- def_age_groups
-  irl_population$agegroup <- def_age_groups
   
-  # Vector of compartment names
+  ### Vector of compartment names
   comp_vec <- c("S", "Ev", "Ip", "IA", "Ii", "It", "Iti", "Iq", "R")
   
-  # Vector of lockdown measures
+  ### Vector of lockdown measures
   lockdown_measures <- c('No Intervention', paste0('Lockdown Level ', 1:5))
   
-  # Compartment extract function
-  comp_extract <- function(dat, comp) {
-    dat[grepl(paste0(comp, "_"), names(dat))]
-  }
-  
-  # Summary plotting function
-  summary_plot <- function(dat, xval, comp_vec, group, I_type){
-    
-    # Extract Compartments
-    comps <- Map(comp_extract, comp = comp_vec,
-                 MoreArgs = list(dat = dat))
-    names(comps)[3:8] <- c("I_Pr", "I_As", "I_Im", "I_Aw", "I_Is", "I_No")
-    comps$I_Sy <- comps$I_Im + comps$I_Aw + comps$I_Is + comps$I_No
-    comps$I_Al <- comps$I_Pr + comps$I_As + comps$I_Sy 
-    comps$I <- comps[[paste0("I_", substr(I_type, start = 1, stop = 2))]]
-    
-    # Sum across desired age groups
-    comp_groups <- lapply(comps[c("S", "Ev", "I", "R")],
-                          "[", i = group)
-    comp_draw <- lapply(comp_groups, rowSums)
-    
-    # Draw the Plot
-    plot_ly(x = ~xval, y = ~comp_draw$S, name = 'Susceptible', type = 'scatter', mode = 'lines',
-            line = list(color = 'rgb(69, 95, 245)')) %>%
-      add_trace(y = ~comp_draw$Ev, name = 'Exposed', mode = 'lines', line = list(color = 'rgb(214, 122, 17)')) %>% 
-      add_trace(y = ~comp_draw$I, name = 'Infected', mode = 'lines', line = list(color = 'rgb(186, 24, 19)')) %>%
-      add_trace(y = ~comp_draw$R, name = 'Removed', mode = 'lines', line = list(color = 'rgb(23, 191, 26)')) %>% 
-      layout(xaxis = list(title = "Time"), 
-             yaxis = list(title = "Compartment Size"), 
-             title = list(text = "Overall Output"))
-    
-  }
-  
-  comp_plot <- function(dat, xval, comp, group, inp){
-    
-    comp_dat <- dat[grepl(comp, names(dat))][group]
-    
-    ### Draw the Plot
-    p <- plot_ly(x = ~xval, y = NA, type = 'scatter', mode = 'lines')
-    
-    for ( i in seq_along(inp$age_sel) ) {
-      p <- p %>% add_trace(y = comp_dat[[i]], name = inp$age_sel[i], mode = 'lines')
-    }
-    
-    p 
-    
-  }
-  
+  ### Today's date
   td <- as.Date(Sys.time())
   
-  # Starting Values
+  ### Starting values for ODE solvers
   dub_xstart <- c(dub_population$popage - 15/16,
                   rep(1, 16),
                   rep(1/16, 16),
                   rep(0, 16 * 6))
-  irl_xstart <- c(irl_population$popage - 15/16,
-                  rep(1, 16),
-                  rep(1/16, 16),
-                  rep(0, 16 * 6))
-  names(dub_xstart) <- names(irl_xstart) <- c(paste0('S_',1:16),
-                                              paste0('Ev_',1:16),
-                                              paste0('Ip_',1:16),
-                                              paste0('IA_',1:16),
-                                              paste0('Ii_',1:16),
-                                              paste0('It_',1:16),
-                                              paste0('Iti_',1:16),
-                                              paste0('Iq_',1:16),
-                                              paste0('R_',1:16))
-  
+  names(dub_xstart) <- c(paste0('S_',1:16),
+                         paste0('Ev_',1:16),
+                         paste0('Ip_',1:16),
+                         paste0('IA_',1:16),
+                         paste0('Ii_',1:16),
+                         paste0('It_',1:16),
+                         paste0('Iti_',1:16),
+                         paste0('Iq_',1:16),
+                         paste0('R_',1:16))
+
+  ### Default SEIR model parameters
   def_pars <- c(3.7, 5.8, 11.6, 0.55, 0.2, 0.8, 0.1, 0.05, 7)
   names(def_pars) <- c('L', 'Cv', 'Dv', 'h', 'f', 'tv', 'q', 'k', 'TT')
   
+  ### Starting transmission rate
   dub_def_beta <- getbeta(3.7, pars = def_pars, p_age = dub_population$propage,
             CONTACTMATRIX = contacts)
   
+  ### 'Known' and full dataset sizes for forecast tab 
   N_known <- 13
   N_full <- 68
   
-  comp_surmise <- function(x) {
-    comps <- Map(comp_extract, comp = comp_vec, 
-                 MoreArgs = list(dat = x))
-    names(comps) <- c("Su", "Ex", "Pr", "As", "I_Im", 
-                      "I_Aw", "I_Is", "I_No", "Re")
-    comps$Sy <- comps$I_Im + comps$I_Aw + comps$I_Is + comps$I_No
-    comps$Al <- comps$Pr + comps$As + comps$Sy
-    comps
-  }
-  
-  # Create Forecast Components
-  comp_sel <- function(x, y, z = 1:16) {
-    comps <- comp_surmise(x)
-    comps_sel <- comps[[substr(y, start = 1, stop = 2)]]
-    N <- nrow(comps_sel)
-    if (length(z) == 1) { return(comps_sel[(N-N_full+1):N, z]) }
-    rowSums(comps_sel[(N-N_full+1):N, z])
-  }
-  
-  intervention_adjust <- function(dat, x) {
-    
-    old_end <- dat$end[nrow(dat)]
-    missing_interventions <- as.numeric(difftime(x, old_end, units = "days"))
-    if (missing_interventions <= 1)
-      return(dat)
-    rbind(dat, data.frame(start = old_end + 1, 
-                          end = x, 
-                          policy = "No Intervention"))
-    
-  }
-  
-  ### Alter datasets to include lockdown measures
+  ### Linearly interpolate missing lockdown measures
   L1 <- mean(c(optim_res$optim_res[optim_res$policy == 'No Intervention'],
                optim_res$optim_res[optim_res$policy == 'Lockdown Level 2']))
   L4 <- mean(c(optim_res$optim_res[optim_res$policy == 'Lockdown Level 3'],
                optim_res$optim_res[optim_res$policy == 'Lockdown Level 5']))
   optim_res <- rbind(optim_res, data.frame(policy = paste0('Lockdown Level ', c(1, 4)),
                                            optim_res = c(L1, L4)))
+  rm(L1, L4)
   
+  ### Include linearly interpolated interventions into the bootstrap dataset
   boot_lockdown_scalars['Lockdown Level 1'] <- (boot_lockdown_scalars$`No Intervention` + boot_lockdown_scalars$`Lockdown Level 2`)/2
   boot_lockdown_scalars['Lockdown Level 4'] <- (boot_lockdown_scalars$`Lockdown Level 3` + boot_lockdown_scalars$`Lockdown Level 5`)/2
   
+  ### Use the transposed bootstrapped data
   boot_scales_t <- cbind( policy = names(boot_lockdown_scalars), 
                           as.data.frame(t(boot_lockdown_scalars)) )
   rm(boot_lockdown_scalars)
-    
-  ### Get quantiles
-  df_quant <- function(x, p) {
-    sapply(x, quantile, probs = p)
-  }
   
-  ### Extract Estimated Deaths
-  comp_deaths <- function(x) {
-    
-    comps <- comp_surmise(x)
-    comps_sel <- comps$Sy
-    N <- nrow(comps_sel)
-    forcast <- (N-N_full+N_known+1):N 
-    
-    ags <- rep(0, 8)
-    ags[1] <- sum(comps_sel[forcast, 1:3])
-    ags[2] <- sum(comps_sel[forcast, 4:5])
-    ags[3] <- sum(comps_sel[forcast, 6:7])
-    ags[4] <- sum(comps_sel[forcast, 8:9])
-    ags[5] <- sum(comps_sel[forcast, 10:11])
-    ags[6] <- sum(comps_sel[forcast, 12:13])
-    ags[7] <- sum(comps_sel[forcast, 14:15])
-    ags[8] <- sum(comps_sel[forcast, 16])
-    
-    ags * est_deaths$Estimated_Deaths
-    
-  }
-  
-  ### Parallelisation
-  #n_cores <- 1
-  n_cores <- max(detectCores()-1, 1)
-  
-  ### For debugging
+  ### Truncate bootstrap dataset; used for debugging
   #boot_scales_t <- boot_scales_t[1:11]
-  
-  
