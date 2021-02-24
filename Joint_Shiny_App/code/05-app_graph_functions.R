@@ -90,25 +90,41 @@ df_quant <- function(x, p) {
 }
 
 ### Compute estimated deaths
-comp_deaths <- function(x) {
-  
+comp_deaths <- function(x, forecaster = FALSE) {
   comps <- comp_surmise(x)
-  comps_sel <- comps$Sy
+  denom_1 <- def_pars["Dv"] - def_pars["Cv"] + def_pars["L"]
+  denom_2 <- denom_1 - def_pars["TT"]
+  comps_sel <- (comps$I_Im + comps$I_No)/denom_1 + comps$I_Is/denom_2
   N <- nrow(comps_sel)
   forcast <- (N-N_full+N_known+1):N 
   
-  ags <- rep(0, 8)
+  if (!forecaster) {
+    ags <- rep(0, 8)
+    ags[1] <- sum(comps_sel[forcast, 1:3])
+    ags[2] <- sum(comps_sel[forcast, 4:5])
+    ags[3] <- sum(comps_sel[forcast, 6:7])
+    ags[4] <- sum(comps_sel[forcast, 8:9])
+    ags[5] <- sum(comps_sel[forcast, 10:11])
+    ags[6] <- sum(comps_sel[forcast, 12:13])
+    ags[7] <- sum(comps_sel[forcast, 14:15])
+    ags[8] <- sum(comps_sel[forcast, 16])
+    return(ags * est_deaths$Estimated_Deaths)
+  }
+  ags <- rep(0, 9)
   ags[1] <- sum(comps_sel[forcast, 1:3])
   ags[2] <- sum(comps_sel[forcast, 4:5])
   ags[3] <- sum(comps_sel[forcast, 6:7])
   ags[4] <- sum(comps_sel[forcast, 8:9])
   ags[5] <- sum(comps_sel[forcast, 10:11])
   ags[6] <- sum(comps_sel[forcast, 12:13])
-  ags[7] <- sum(comps_sel[forcast, 14:15])
-  ags[8] <- sum(comps_sel[forcast, 16])
-  
-  ags * est_deaths$Estimated_Deaths
-  
+  ags[7] <- sum(comps_sel[forcast, 14])
+  ags[8] <- sum(comps_sel[forcast, 15])
+  ags[9] <- sum(comps_sel[forcast, 16])
+  est_alt <- est_deaths$Estimated_Deaths[c(1:8, 8)]
+  prop_70 <- as.numeric( dub_population[15, 2] / sum(dub_population[14:15, 2]) )
+  est_alt[7] <- est_alt[7] * (1 - prop_70)
+  est_alt[8] <- est_alt[8] * prop_70
+  ags * est_alt
 }
 
 

@@ -10,7 +10,6 @@
   ### Need to do this to get it working on shinyapps.io
   library('shiny')
   library('shinythemes')
-  #library('dplyr')
   library('shinyWidgets')
   library('shinydashboard') 
   library('Matrix')
@@ -60,7 +59,8 @@
 ####-- 4. Extra App Data  --------------------------------------------------####
   
   ### Number of workers to parallelise over
-  n_cores <- 1
+  #n_cores <- 1
+  n_cores <- 3
   #n_cores <- max(detectCores()-1, 1)
   
   ### Create Default Age Groups
@@ -122,5 +122,5 @@
                           as.data.frame(t(boot_lockdown_scalars)) )
   rm(boot_lockdown_scalars)
   
-  ### Truncate bootstrap dataset - used for debugging
-  boot_scales_t <- boot_scales_t[1:11]
+  ### Truncate bootstrap dataset; used for debugging
+  #boot_scales_t <- boot_scales_t[1:11]

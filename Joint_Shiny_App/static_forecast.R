@@ -87,22 +87,22 @@ rm(MID, UL, LL)
 # Write results to file
 save(forecast_fits, file = "data/forecast_fits.Rdata")
 
-### Repeat the above but reducing the contacts of the 75+ population to 0
-set_to_zero <- function(x, y = 16) {
+### Repeat the above but reducing the contacts of the 70+ population to 0
+set_to_zero <- function(x, y = 15:16) {
   x[y, ] <- x[, y] <- 0
   x
 }
-contacts_isolated75 <- lapply(contacts, set_to_zero)
+contacts_isolated70 <- lapply(contacts, set_to_zero)
 
-dub_def_beta_isolated75 <- getbeta(3.7, pars = def_pars, p_age = dub_population$propage,
-            CONTACTMATRIX = contacts_isolated75)
+dub_def_beta_isolated70 <- getbeta(3.7, pars = def_pars, p_age = dub_population$propage,
+            CONTACTMATRIX = contacts_isolated70)
 
 cl <- makeCluster(n_cores)
 registerDoParallel(cl)
 clusterExport(
            cl, varlist=c("SEIR_model_simulation", "def_pars", 
-                         "contacts_isolated75", "dub_xstart", "dub_population",
-                         "dub_def_beta_isolated75", "lsoda", "SEIR_model_D", 
+                         "contacts_isolated70", "dub_xstart", "dub_population",
+                         "dub_def_beta_isolated70", "lsoda", "SEIR_model_D", 
                          "tmax", "all_linfo"),
            envir=environment())
 
@@ -112,7 +112,7 @@ for (i in 1:5) {
   linfo <- all_linfo[[i]]
   All_Runs <- foreach(i = 5:ncol(linfo), .combine = rbind) %dopar% {
     SEIR_model_simulation(pars = def_pars,
-                          contacts_ireland = contacts_isolated75,
+                          contacts_ireland = contacts,
                           dateStart = as.Date('2020-02-29'),
                           startval = dub_xstart,
                           POP = dub_population,
@@ -120,8 +120,8 @@ for (i in 1:5) {
                           tmax = tmax, 
                           lockdown_information = linfo[, c(2:3, i)],
                           isolated = TRUE,
-                          isolated_contacts = contacts_isolated75,
-                          isolated_beta = dub_def_beta_isolated75)$solution
+                          isolated_contacts = contacts_isolated70,
+                          isolated_beta = dub_def_beta_isolated70)$solution
   }
   
   All_Runs <- split(All_Runs, All_Runs$time)
@@ -144,16 +144,16 @@ for (i in 1:5) {
                                     tmax = tmax, 
                                     lockdown_information = linfo[, 2:4],
                                     isolated = TRUE,
-                                    isolated_contacts = contacts_isolated75,
-                                    isolated_beta = dub_def_beta_isolated75)$solution
+                                    isolated_contacts = contacts_isolated70,
+                                    isolated_beta = dub_def_beta_isolated70)$solution
     
 }
 
 stopCluster(cl)
-forecast_fits_isolated75 <- list(MID = MID, UL = UL, LL = LL)
+forecast_fits_isolated70 <- list(MID = MID, UL = UL, LL = LL)
 rm(MID, UL, LL)
 
 # Write results to file
-save(forecast_fits_isolated75, file = "data/forecast_fits_isolated75.Rdata")
+save(forecast_fits_isolated70, file = "data/forecast_fits_isolated70.Rdata")
 
 
