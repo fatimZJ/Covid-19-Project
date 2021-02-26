@@ -26,9 +26,55 @@ sum_comp_inds <- function(x, y) {
   rowSums(y[x])
 }
 
-make_graphs <- function(dat, filename) {
-  UL <- MID <- LL <- vector("list", 5)
-  for (i in 1:5) {
+### Define Scenarios
+scenarios <- c("No Intervention -> No Intervention",
+               "Level 3 -> Level 3",
+               "Level 5 -> Level 5",
+               "Level 3 -> Level 5",
+               "Level 2 -> Level 5",
+               "Level 1 -> Level 5")
+
+### Calculate deaths
+age_deaths <- function(x, forecaster = FALSE) {
+  denom_1 <- def_pars["Dv"] - def_pars["Cv"] + def_pars["L"]
+  denom_2 <- denom_1 - def_pars["TT"]
+  N <- nrow(x)
+  get_rows <- (N-63):332
+  moved_removed <- (x[get_rows, 66:81] + x[get_rows, 114:129])/denom_1 + x[get_rows, 98:113]/denom_2
+  if (!forecaster) {
+    ags <- matrix(0, nrow = nrow(moved_removed), ncol = 8)
+    ags[, 1] <- rowSums(moved_removed[, 1:3])
+    ags[, 2] <- rowSums(moved_removed[, 4:5])
+    ags[, 3] <- rowSums(moved_removed[, 6:7])
+    ags[, 4] <- rowSums(moved_removed[, 8:9])
+    ags[, 5] <- rowSums(moved_removed[, 10:11])
+    ags[, 6] <- rowSums(moved_removed[, 12:13])
+    ags[, 7] <- rowSums(moved_removed[, 14:15])
+    ags[, 8] <- moved_removed[, 16]
+    return(ags %*% est_deaths$Estimated_Deaths)
+  }
+  ags <- matrix(0, nrow = nrow(moved_removed), ncol = 9)
+  ags[, 1] <- rowSums(moved_removed[, 1:3])
+  ags[, 2] <- rowSums(moved_removed[, 4:5])
+  ags[, 3] <- rowSums(moved_removed[, 6:7])
+  ags[, 4] <- rowSums(moved_removed[, 8:9])
+  ags[, 5] <- rowSums(moved_removed[, 10:11])
+  ags[, 6] <- rowSums(moved_removed[, 12:13])
+  ags[, 7] <- moved_removed[, 14]
+  ags[, 8] <- moved_removed[, 15]
+  ags[, 9] <- moved_removed[, 16]
+  est_alt <- est_deaths$Estimated_Deaths[c(1:8, 8)]
+  prop_70 <- as.numeric( dub_population[15, 2] / sum(dub_population[14:15, 2]) )
+  est_alt[7] <- est_alt[7] * (1 - prop_70)
+  est_alt[8] <- est_alt[8] * prop_70
+  ags %*% est_alt
+}
+
+make_graphs <- function(dat, filename, forecaster = FALSE) {
+  
+  len <- length(dat[[1]])
+  UL <- MID <- LL <- vector("list", len)
+  for (i in 1:len) {
     UL[[i]] <- as.data.frame( sapply(comp_inds, sum_comp_inds, y = dat$UL[[i]]) )
     MID[[i]] <- as.data.frame( sapply(comp_inds, sum_comp_inds, y = dat$MID[[i]]) )
     LL[[i]] <- as.data.frame( sapply(comp_inds, sum_comp_inds, y = dat$LL[[i]]) )
@@ -56,28 +102,30 @@ make_graphs <- function(dat, filename) {
   
   # Draw empty plot that we will add to
   truncate_dat <- function(x) {
-    x[["It_"]][(nrow(x) - n_date):nrow(x)] / 7
+    x[["It_"]][(nrow(x) - n_date):nrow(x)] / def_pars["TT"]
   }
   
   UL_all <- lapply(UL, truncate_dat)
   MID_all <- lapply(MID, truncate_dat)
   LL_all <- lapply(LL, truncate_dat)
   
-  UL_y <- UL_all[-1]
-  MID_y <- MID_all[-1]
-  LL_y <- LL_all[-1]
+  UL_y <- UL_all[-c(1, 7)]
+  MID_y <- MID_all[-c(1, 7)]
+  LL_y <- LL_all[-c(1, 7)]
   max_ind <- which.max( sapply(UL_y, max) )
   
   pdf(filename)
-  plot(x = xval, y = UL_y[[max_ind]], type = "n", ylab = "", xaxt = "n",
-       xlab = "Date", ylim = c(0, max(c(UL_y[[max_ind]], actual_dat_trim$Cases))), xlim = xval_disp,
-       main = "Case Forecast")
+  plot(x = xval, y = UL_y[[max_ind]], type = "n", ylab = "Cases", xaxt = "n",
+       xlab = "", ylim = c(0, max(c(UL_y[[max_ind]], actual_dat_trim$Cases))), xlim = xval_disp,
+       main = "COVID-19 Case Forecast")
   axis.Date(1, at = xax, las = 2)
-  abline(v = xax, lty = 2, col = "lightgray")
-  abline(h = seq(0, 5000, 1000), lty = 2, col = "lightgray")
+  #abline(v = xax, lty = 2, col = "lightgray")
+  #abline(h = seq(0, 5000, 1000), lty = 2, col = "lightgray")
+  grid()
   
   # Add forecasts
-  use_cols <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442")#, "#0072B2")
+  use_cols <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", 
+                "#0072B2", "#D55E00", "#CC79A7", "#999999")
   
   N <- length(MID_y)
   for (i in 1:N) {
@@ -89,34 +137,90 @@ make_graphs <- function(dat, filename) {
     lines(x = xval, y = MID_y[[i]], col = use_cols[i])
   }
   
-  lines(Cases ~ Date, data = actual_dat_trim)
+  lines(Cases ~ Date, data = actual_dat_trim, col = "#999999")
   
-  legend("topleft", col = c(use_cols, "#000000"), lty = 1, 
-         legend = c(paste("Scenario", 2:5), "Actual Cases"),
+  legend("topleft", col = c(use_cols[1:N], "#999999"), lty = 1, 
+         legend = c(scenarios[2:6], "Actual Cases"),
          bty = "n")
   dev.off()
   
   # Plot no Intervention
-  pdf(paste0("No_Intervention_", filename))
-  plot(x = xval, y = UL_all[[1]], ylab = "", xaxt = "n",
-       xlab = "Date", xlim = xval_disp, type = "n",
-       ylim = c(0, 40000),
-       main = "Case Forecast", col = use_cols[1])
+  #pdf(paste0("No_Intervention_", filename))
+  #plot(x = xval, y = UL_all[[1]], ylab = "", xaxt = "n",
+  #     xlab = "Date", xlim = xval_disp, type = "n",
+  #     ylim = c(0, 40000),
+  #     main = "Case Forecast", col = use_cols[1])
+  #axis.Date(1, at = xax, las = 2)
+  #abline(v = xax, lty = 2, col = "lightgray")
+  #abline(h = seq(0, 40000, 10000), lty = 2, col = "lightgray")
+  #polygon(c(xval,rev(xval)),c(LL_all[[1]],rev(UL_all[[1]])),col=alpha(use_cols[1], 0.1),
+  #        border = alpha(use_cols[1], 0.1))
+  #lines(x = xval, y = MID_all[[1]], col = use_cols[1])
+  #lines(Cases ~ Date, data = actual_dat_trim)
+  #legend("topleft", col = c(use_cols[1], "#000000"), lty = 1, 
+  #       legend = c("Scenario 1", "Actual Cases"),
+  #       bty = "n")
+  #dev.off()
+  
+  # Plot just scenario 6
+  #pdf(paste0("Scenario_6_", filename))
+  #plot(x = xval, y = UL_all[[6]], ylab = "", xaxt = "n",
+  #     xlab = "Date", xlim = xval_disp, type = "n",
+  #     #ylim = c(0, 40000),
+  #     main = "Case Forecast", col = use_cols[6])
+  #axis.Date(1, at = xax, las = 2)
+  #abline(v = xax, lty = 2, col = "lightgray")
+  #abline(h = seq(0, 40000, 10000), lty = 2, col = "lightgray")
+  #polygon(c(xval,rev(xval)),c(LL_all[[6]],rev(UL_all[[6]])),col=alpha(use_cols[6], 0.1),
+  #        border = alpha(use_cols[6], 0.1))
+  #lines(x = xval, y = MID_all[[6]], col = use_cols[1])
+  #lines(Cases ~ Date, data = actual_dat_trim)
+  #legend("topleft", col = c(use_cols[6], "#000000"), lty = 1, 
+  #       legend = c("Scenario 6", "Actual Cases"),
+  #       bty = "n")
+  #dev.off()
+  
+  UL_deaths <- Map(age_deaths, forecast_fits$UL, forecaster = forecaster)
+  MID_deaths <- Map(age_deaths, forecast_fits$MID, forecaster = forecaster)
+  LL_deaths <- Map(age_deaths, forecast_fits$LL, forecaster = forecaster)
+  
+  UL_y <- UL_deaths[-c(1, 7)]
+  MID_y <- MID_deaths[-c(1, 7)]
+  LL_y <- LL_deaths[-c(1, 7)]
+  max_ind <- which.max( sapply(UL_y, max) )
+  
+  pdf(paste0("deaths_", filename))
+  plot(x = xval, y = UL_y[[max_ind]], type = "n", ylab = "Expected Deaths", xaxt = "n",
+       xlab = "", ylim = c(0, max(UL_y[[max_ind]])), xlim = xval_disp,
+       main = "COVID-19 Death Forecast")
   axis.Date(1, at = xax, las = 2)
-  abline(v = xax, lty = 2, col = "lightgray")
-  abline(h = seq(0, 40000, 10000), lty = 2, col = "lightgray")
-  polygon(c(xval,rev(xval)),c(LL_all[[1]],rev(UL_all[[1]])),col=alpha(use_cols[1], 0.1),
-          border = alpha(use_cols[1], 0.1))
-  lines(x = xval, y = MID_all[[1]], col = use_cols[1])
-  lines(Cases ~ Date, data = actual_dat_trim)
-  legend("topleft", col = c(use_cols[1], "#000000"), lty = 1, 
-         legend = c("Scenario 1", "Actual Cases"),
+  #abline(v = xax, lty = 2, col = "lightgray")
+  #abline(h = seq(0, 5000, 1000), lty = 2, col = "lightgray")
+  grid()
+  
+  # Add forecasts
+  use_cols <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", 
+                "#0072B2", "#D55E00", "#CC79A7", "#999999")
+  
+  N <- length(MID_y)
+  for (i in 1:N) {
+    polygon(c(xval,rev(xval)),c(LL_y[[i]],rev(UL_y[[i]])),col=alpha(use_cols[i], 0.1),
+          border = alpha(use_cols[i], 0.1))
+  }
+  
+  for (i in 1:N) {
+    lines(x = xval, y = MID_y[[i]], col = use_cols[i])
+  }
+  
+  legend("topleft", col = use_cols[1:N], lty = 1, 
+         legend = scenarios[2:6],
          bty = "n")
   dev.off()
+  
 }
 
 make_graphs(forecast_fits, "forecast_fits.pdf")
-make_graphs(forecast_fits_isolated70, "forecast_fits_isolated70.pdf")
+make_graphs(forecast_fits_isolated70, "forecast_fits_isolated70.pdf", forecaster = TRUE)
   
 ### Estimated Deaths
 # forecast
