@@ -309,22 +309,22 @@ server <- function(input, output, session) {
   ### Costs
   output$Cost_12 <- renderText({ 
     cost <- est_costs$Estimated_Costs[est_costs$Level == input$res1]
-    paste(cost, "million euro")
+    paste(cost, "m€/day")
   })
   
   output$Cost_34 <- renderText({ 
     cost <- est_costs$Estimated_Costs[est_costs$Level == input$res2]
-    paste(cost, "million euro")
+    paste(cost, "m€/day")
   })
   
   output$Cost_56 <- renderText({ 
     cost <- est_costs$Estimated_Costs[est_costs$Level == input$res3]
-    paste(cost, "million euro")
+    paste(cost, "m€/day")
   })
   
   output$Cost_78 <- renderText({ 
     cost <- est_costs$Estimated_Costs[est_costs$Level == input$res4]
-    paste(cost, "million euro")
+    paste(cost, "m€/day")
   })
   
   output$TotalCostBox <- renderInfoBox({
@@ -332,7 +332,8 @@ server <- function(input, output, session) {
     sel_costs <- left_join(sel_levs, est_costs, by = "Level")
     
     infoBox(title = "Expected Cost", color = "red", icon = icon("euro"),
-            subtitle = "Million Euros", value = sum(sel_costs$Estimated_Costs))
+            subtitle = "Million Euros", 
+            value = round( sum(sel_costs$Estimated_Costs * 14), 0 ))
   })
   
   ### Output

@@ -7,27 +7,40 @@ source("global.R")
 ### Solve SEIR ODEs
 # Set dates  
 start_date <- as.Date("2020-12-01")
-date_start_seq <- seq.Date(start_date, start_date + 55L, 14L)
+date_start_seq <- as.Date(c("2020-12-01", "2020-12-31"))
+date_start_end <- as.Date(c("2020-12-30", "2021-01-25"))
 tmax <- as.numeric( difftime(start_date + 55, as.Date('2020-02-29'), units = "days") )
 
 # Set lockdown levels
-all_levs <- vector("list", 5)
-all_levs[[1]] <- rep(optim_res$policy[1], 4)
-all_levs[[2]] <- rep(optim_res$policy[8], 4)
-all_levs[[3]] <- rep(optim_res$policy[9], 4)
-all_levs[[4]] <- c( rep(optim_res$policy[8], 2), rep(optim_res$policy[9], 2) )
-all_levs[[5]] <- c( rep(optim_res$policy[7], 2), rep(optim_res$policy[9], 2) )
-all_levs[[6]] <- c( rep(optim_res$policy[10], 2), rep(optim_res$policy[9], 2) )
-all_levs[[7]] <- c( rep(optim_res$policy[1], 2), rep(optim_res$policy[9], 2) )
+all_levs <- vector("list", 7)
+all_levs[[1]] <- rep(optim_res$policy[1], 2)
+all_levs[[2]] <- rep(optim_res$policy[8], 2)
+all_levs[[3]] <- rep(optim_res$policy[9], 2)
+all_levs[[4]] <- c( optim_res$policy[8], optim_res$policy[9] )
+all_levs[[5]] <- c( optim_res$policy[7], optim_res$policy[9] )
+all_levs[[6]] <- c( optim_res$policy[10], optim_res$policy[9] )
+all_levs[[7]] <- c( optim_res$policy[1], optim_res$policy[9] )
 len <- length(all_levs)
 
+# Find estimated cost
+diff_date <- as.numeric( difftime(date_start_end, date_start_seq) )
+est_costs$Estimated_Costs[which(est_costs$Level %in% all_levs[[2]])]
+cost_extract <- function(x) {
+  y <- which(est_costs$Level %in% x)
+  if (length(y) < 2) { y <- rep(y, 2) }
+  est_costs$Estimated_Costs[y]
+}
+
+all_costs <- lapply(all_levs, cost_extract) 
+lapply(all_costs, "%*%", diff_date)
+
 # Create lockdown forecast data
-lockdown_forecast <- optim_dat <- all_linfo <- vector("list", 5)
+lockdown_forecast <- optim_dat <- all_linfo <- vector("list", 7)
 for (i in 1:len) {
   
   lockdown_forecast[[i]] <- rbind(interventions_info,
                                   data.frame(start = date_start_seq, 
-                                             end = date_start_seq + 13L,
+                                             end = date_start_end,
                                              policy = all_levs[[i]]))
     optim_dat[[i]] <- merge(lockdown_forecast[[i]], optim_res, by = "policy")
     all_linfo[[i]] <- merge(optim_dat[[i]], boot_scales_t, by = "policy")

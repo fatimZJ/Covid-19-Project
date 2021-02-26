@@ -233,3 +233,4 @@ round( sapply( Map(comp_deaths, forecast_fits_isolated70$UL, forecaster = TRUE),
 round( sapply( Map(comp_deaths, forecast_fits_isolated70$MID, forecaster = TRUE), sum ), 0 )
 round( sapply( Map(comp_deaths, forecast_fits_isolated70$LL, forecaster = TRUE), sum ), 0 )
 
+
