@@ -17,10 +17,13 @@ all_levs[[2]] <- rep(optim_res$policy[8], 4)
 all_levs[[3]] <- rep(optim_res$policy[9], 4)
 all_levs[[4]] <- c( rep(optim_res$policy[8], 2), rep(optim_res$policy[9], 2) )
 all_levs[[5]] <- c( rep(optim_res$policy[7], 2), rep(optim_res$policy[9], 2) )
+all_levs[[6]] <- c( rep(optim_res$policy[10], 2), rep(optim_res$policy[9], 2) )
+all_levs[[7]] <- c( rep(optim_res$policy[1], 2), rep(optim_res$policy[9], 2) )
+len <- length(all_levs)
 
 # Create lockdown forecast data
 lockdown_forecast <- optim_dat <- all_linfo <- vector("list", 5)
-for (i in 1:5) {
+for (i in 1:len) {
   
   lockdown_forecast[[i]] <- rbind(interventions_info,
                                   data.frame(start = date_start_seq, 
@@ -44,8 +47,8 @@ clusterExport(
            envir=environment())
 
 # Run SEIR Models
-UL <- MID <- LL <- vector("list", 5)
-for (i in 1:5) {
+UL <- MID <- LL <- vector("list", len)
+for (i in 1:len) {
   linfo <- all_linfo[[i]]
   All_Runs <- foreach(i = 5:ncol(linfo), .combine = rbind) %dopar% {
     SEIR_model_simulation(pars = def_pars,
@@ -107,8 +110,8 @@ clusterExport(
            envir=environment())
 
 # Run SEIR Models
-UL <- MID <- LL <- vector("list", 5)
-for (i in 1:5) {
+UL <- MID <- LL <- vector("list", len)
+for (i in 1:len) {
   linfo <- all_linfo[[i]]
   All_Runs <- foreach(i = 5:ncol(linfo), .combine = rbind) %dopar% {
     SEIR_model_simulation(pars = def_pars,

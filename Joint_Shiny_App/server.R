@@ -30,7 +30,7 @@ server <- function(input, output, session) {
     "The model forecast tab allows users to input lockdown settings for the next 8 weeks and examine the
     expected differences in deaths and cost to the economy. Once the date and lockdown selctions are made,
     the forecast can be computed by clicking the 'Create Forecast' button. It will take a few moments for
-    the forecast to compute."
+    the forecast to appear."
   })
   
   output$Acknowledgement <- renderText({
@@ -377,17 +377,29 @@ server <- function(input, output, session) {
     
   })
   
+  #output$forecast_exp_deaths <- renderPlotly({
+  #  
+  #  deaths <- as.data.frame(sel_deaths())[age_sel_fc()$small_age_vec, ]
+  #  xax <- forecast_age_groups[age_sel_fc()$small_age_vec]
+  #  
+  #  plot_ly(x = xax, y = deaths$UL, type = 'bar', name = 'Upper') %>%
+  #    add_trace(y = deaths$MID, name = 'Forecast') %>%
+  #    add_trace(y = deaths$LL, name = 'Lower') %>%
+  #    layout(yaxis = list(title = 'Expected Deaths'), xaxis = list(title = 'Age Groups'))
+  #  
+  #})
+ 
   output$forecast_exp_deaths <- renderPlotly({
     
     deaths <- as.data.frame(sel_deaths())[age_sel_fc()$small_age_vec, ]
     xax <- forecast_age_groups[age_sel_fc()$small_age_vec]
     
-    plot_ly(x = xax, y = deaths$UL, type = 'bar', name = 'Upper') %>%
-      add_trace(y = deaths$MID, name = 'Forecast') %>%
-      add_trace(y = deaths$LL, name = 'Lower') %>%
-      layout(yaxis = list(title = 'Expected Deaths'), xaxis = list(title = 'Age Groups'))
+    plot_ly(x = xax, y = deaths$MID, type = 'scatter', mode = 'markers',
+            error_y = list(type = "data", symmetric = FALSE, 
+                  arrayminus = deaths$MID - deaths$LL, 
+                  array = deaths$UL - deaths$MID))
     
   })
-  
+   
 }
 

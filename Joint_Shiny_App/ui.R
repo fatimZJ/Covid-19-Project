@@ -92,11 +92,11 @@ body <- dashboardBody(
     #Tab 3: Forecast Settings
     tabItem(tabName = "forecast",
             fluidRow(
-              box( title = "Dublin Forecast", width = 10, solidHeader = TRUE,
+              box( title = "8 Week Compartment Projection", width = 10, solidHeader = TRUE,
                    status = "primary",
                    plotlyOutput("forecast_plot_dub") %>%
                                 withSpinner(color = "#0dc5c1", size = 2, hide.ui = FALSE)),
-              box( title = "Display", width = 2, solidHeader = TRUE, status = "warning",
+              box( title = "Display Options", width = 2, solidHeader = TRUE, status = "warning",
                  selectInput(inputId = "Disp_comp", label = "Compartment:",
                              choices = list("Susceptible", "Exposed", "All Infected", 
                                             "Symptomatic Infected", "Pre-symptomatic Infected", 
@@ -109,38 +109,38 @@ body <- dashboardBody(
                  )
             ),
             fluidRow(
-              infoBox("", "Select lockdown levels:", 
+              infoBox("", "Select Lockdown Levels:", 
                       icon = icon("chevron-right"), width = 2, fill = TRUE),
-              box( title = "Restriction Weeks 1 & 2:", width = 2, solidHeader = TRUE, status = "info",
+              box( title = "Weeks 1 & 2:", width = 2, solidHeader = TRUE, status = "info",
                    selectInput(inputId = "res1", label = "Restriction:",
                                choices = lockdown_measures),
                    textOutput("Cost_12")
                    ),
-              box( title = "Restriction Weeks 3 & 4:", width = 2, solidHeader = TRUE, status = "info",
+              box( title = "Weeks 3 & 4:", width = 2, solidHeader = TRUE, status = "info",
                    selectInput(inputId = "res2", label = "Restriction:",
                                choices = lockdown_measures),
                    textOutput("Cost_34")
               ),
-              box( title = "Restriction Weeks 5 & 6:", width = 2, solidHeader = TRUE, status = "info",
+              box( title = "Weeks 5 & 6:", width = 2, solidHeader = TRUE, status = "info",
                    selectInput(inputId = "res3", label = "Restriction:",
                                choices = lockdown_measures),
                    textOutput("Cost_56")
               ),
-              box( title = "Restriction Weeks 7 & 8:", width = 2, solidHeader = TRUE, status = "info",
+              box( title = "Weeks 7 & 8:", width = 2, solidHeader = TRUE, status = "info",
                    selectInput(inputId = "res4", label = "Restriction:",
                                choices = lockdown_measures),
                    textOutput("Cost_78")
               ),
-              box( title = "Fit Choices", width = 2, solidHeader = TRUE, status = "success", 
+              box( title = "Forecast Button", width = 2, solidHeader = TRUE, status = "success", 
                    actionButton("fit_forecast", label = "Create Forecast", icon = icon("play-circle"))
               )
             ),
             fluidRow(
-              box( title = "Expected Deaths by Age Group", width = 10, solidHeader = TRUE,
+              box( title = "8 Week Projected Deaths by Age Group", width = 10, solidHeader = TRUE,
                    status = "danger",
                    plotlyOutput("forecast_exp_deaths") %>%
                                 withSpinner(color = "#0dc5c1", size = 2, hide.ui = FALSE)),
-              box( title = "Expected Deaths", width = 2, solidHeader = TRUE, status = "danger",
+              box( title = "Total Projected Deaths", width = 2, solidHeader = TRUE, status = "danger",
                      tableOutput('deaths') ),
               infoBoxOutput('TotalCostBox', width = 2)
             )
