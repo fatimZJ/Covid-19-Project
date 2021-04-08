@@ -3,7 +3,7 @@
 sidebar <- dashboardSidebar(
   sidebarMenu(
     menuItem("Info", tabName = "info", icon = icon("info")),
-    menuItem("SEIR Model Dashboard", tabName = "seir", icon = icon("dashboard")),
+    #menuItem("SEIR Model Dashboard", tabName = "seir", icon = icon("dashboard")),
     menuItem("Forecast Settings", tabName = "forecast", icon = icon("wrench"))
   )
 )
