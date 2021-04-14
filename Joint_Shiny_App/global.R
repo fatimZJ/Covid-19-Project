@@ -61,8 +61,8 @@
   ### Number of workers to parallelise over
   #n_cores <- 1
   #n_cores <- 3
-  n_cores <- 2
-  #n_cores <- max(detectCores()-1, 1)
+  #n_cores <- 8
+  n_cores <- max(detectCores()-1, 1)
   
   ### Create Default Age Groups
   def_age_groups <- c(paste0(seq(0, 70, 5), " - ", seq(4, 74, 5)), "75+")
