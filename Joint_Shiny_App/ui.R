@@ -12,21 +12,12 @@ body <- dashboardBody(
   tabItems(
     #Tab 1: Info
     tabItem(tabName = "info",
-            box(title = "1. About This Application", solidHeader = TRUE,
+            box(title = "About This Application", solidHeader = TRUE,
                 status = "primary", width = 12,
               textOutput("General_Intro"),
               uiOutput("pp_link")
             ),
-            box(title = "2. Model Dashboard Tab", solidHeader = TRUE,
-                status = "primary", width = 12,
-              textOutput("Mod_Dash_Tab"),
-            ),
-            box(title = "3. Model Forecast Tab", solidHeader = TRUE,
-                status = "primary", width = 12,
-              textOutput("Mod_Fore_Tab"),
-            ),
-            
-            box(title = "4. Acknowledgement", solidHeader = TRUE,
+            box(title = "Acknowledgement", solidHeader = TRUE,
                 status = "primary", width = 12,
               textOutput("Acknowledgement"),
               uiOutput("sfi_link")
