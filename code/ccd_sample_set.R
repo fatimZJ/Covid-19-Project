@@ -18,3 +18,5 @@ fun_list <- list(exp, exp, exp, exp, exp, identity, exp)
 trans_set_mat <- mapply(function(x, y) {x(y)}, x = fun_list, y = set_mat)
 colnames(trans_set_mat) <- parnames
 
+ccd_set$weights
+
