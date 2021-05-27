@@ -10,6 +10,7 @@ start_date <- as.Date("2021-02-01")
 date_start_seq <- c(start_date, start_date + 30)
 date_start_end <- c(start_date + 29, start_date + 55)
 tmax <- as.numeric( difftime(start_date + 55, as.Date('2020-02-29'), units = "days") )
+start_date - date_start_end[2] - 1
 
 # Set lockdown levels
 all_levs <- vector("list", 7)

@@ -13,7 +13,6 @@ actual_dat <- read_csv("data/COVID-19_County_Statistics_HPSC_Ireland_(Point_Geom
 actual_dat <- actual_dat[-(1:2), ]
 actual_dat$Date <- as.Date(substr(actual_dat$TimeStampDate, 1, 10), format = "%Y/%m/%d")
 actual_dat$Cases <- c(0, diff(actual_dat$ConfirmedCovidCases))
-#actual_dat_trim <- filter(actual_dat, (Date >= as.Date("2020-11-25")) & (Date <= as.Date("2021-01-26")))
 actual_dat_trim <- filter(actual_dat, (Date >= as.Date("2021-01-26")) & (Date <= as.Date("2021-03-28")))
 
 ### Sum across compartments
@@ -36,11 +35,11 @@ scenarios <- c("No Intervention -> No Intervention",
                "Level 1 -> Level 5")
 
 ### Calculate deaths
-age_deaths <- function(x, forecaster = FALSE) {
+age_deaths <- function(x, forecaster = FALSE, just_cases = FALSE) {
   denom_1 <- def_pars["Dv"] - def_pars["Cv"] + def_pars["L"]
   denom_2 <- denom_1 - def_pars["TT"]
   N <- nrow(x)
-  get_rows <- (N-63):N
+  get_rows <- (N-56):N
   moved_removed <- (x[get_rows, 66:81] + x[get_rows, 114:129])/denom_1 + x[get_rows, 98:113]/denom_2
   if (!forecaster) {
     ags <- matrix(0, nrow = nrow(moved_removed), ncol = 8)
@@ -52,6 +51,7 @@ age_deaths <- function(x, forecaster = FALSE) {
     ags[, 6] <- rowSums(moved_removed[, 12:13])
     ags[, 7] <- rowSums(moved_removed[, 14:15])
     ags[, 8] <- moved_removed[, 16]
+    if ( just_cases ) { return( ags ) }
     return(ags %*% est_deaths$Estimated_Deaths)
   }
   ags <- matrix(0, nrow = nrow(moved_removed), ncol = 9)
@@ -68,6 +68,7 @@ age_deaths <- function(x, forecaster = FALSE) {
   prop_70 <- as.numeric( dub_population[15, 2] / sum(dub_population[14:15, 2]) )
   est_alt[7] <- est_alt[7] * (1 - prop_70)
   est_alt[8] <- est_alt[8] * prop_70
+  if ( just_cases ) { return( ags ) }
   ags %*% est_alt
 }
 
@@ -94,12 +95,9 @@ make_graphs <- function(dat, filename, forecaster = FALSE) {
   LL <- lapply(LL, add_comps)
     
   ### Draw Plots
-  # Prepare x axis
-  #start_date <- as.Date("2020-12-01")
   start_date <- as.Date("2021-02-01")
   xax <- seq.Date(start_date - 7, start_date + 7*8, 7)
   xval <- seq.Date(min(xax), max(xax), 1)
-  #xval_disp <- as.Date(c("2020-11-27", "2021-01-23"))
   xval_disp <- as.Date(c("2021-01-28", "2021-03-26"))
   n_date <- as.numeric( difftime(max(xax), min(xax), units = "days") )
   
@@ -118,12 +116,11 @@ make_graphs <- function(dat, filename, forecaster = FALSE) {
   max_ind <- which.max( sapply(UL_y, max) )
   
   pdf(filename)
-  plot(x = xval, y = UL_y[[max_ind]], type = "n", ylab = "Cases", xaxt = "n",
-       xlab = "", ylim = c(0, 10000), xlim = xval_disp,
-       main = "COVID-19 Case Forecast")
+  plot(x = xval, y = UL_y[[max_ind]], type = "n", ylab = "Expected Daily Cases", xaxt = "n",
+       xlab = "", ylim = c(0, 6500), 
+       xlim = xval_disp,
+       main = "")
   axis.Date(1, at = xax, las = 2)
-  #abline(v = xax, lty = 2, col = "lightgray")
-  #abline(h = seq(0, 5000, 1000), lty = 2, col = "lightgray")
   grid()
   
   # Add forecasts
@@ -147,42 +144,6 @@ make_graphs <- function(dat, filename, forecaster = FALSE) {
          bty = "n")
   dev.off()
   
-  # Plot no Intervention
-  #pdf(paste0("No_Intervention_", filename))
-  #plot(x = xval, y = UL_all[[1]], ylab = "", xaxt = "n",
-  #     xlab = "Date", xlim = xval_disp, type = "n",
-  #     ylim = c(0, 40000),
-  #     main = "Case Forecast", col = use_cols[1])
-  #axis.Date(1, at = xax, las = 2)
-  #abline(v = xax, lty = 2, col = "lightgray")
-  #abline(h = seq(0, 40000, 10000), lty = 2, col = "lightgray")
-  #polygon(c(xval,rev(xval)),c(LL_all[[1]],rev(UL_all[[1]])),col=alpha(use_cols[1], 0.1),
-  #        border = alpha(use_cols[1], 0.1))
-  #lines(x = xval, y = MID_all[[1]], col = use_cols[1])
-  #lines(Cases ~ Date, data = actual_dat_trim)
-  #legend("topleft", col = c(use_cols[1], "#000000"), lty = 1, 
-  #       legend = c("Scenario 1", "Actual Cases"),
-  #       bty = "n")
-  #dev.off()
-  
-  # Plot just scenario 6
-  #pdf(paste0("Scenario_6_", filename))
-  #plot(x = xval, y = UL_all[[6]], ylab = "", xaxt = "n",
-  #     xlab = "Date", xlim = xval_disp, type = "n",
-  #     #ylim = c(0, 40000),
-  #     main = "Case Forecast", col = use_cols[6])
-  #axis.Date(1, at = xax, las = 2)
-  #abline(v = xax, lty = 2, col = "lightgray")
-  #abline(h = seq(0, 40000, 10000), lty = 2, col = "lightgray")
-  #polygon(c(xval,rev(xval)),c(LL_all[[6]],rev(UL_all[[6]])),col=alpha(use_cols[6], 0.1),
-  #        border = alpha(use_cols[6], 0.1))
-  #lines(x = xval, y = MID_all[[6]], col = use_cols[1])
-  #lines(Cases ~ Date, data = actual_dat_trim)
-  #legend("topleft", col = c(use_cols[6], "#000000"), lty = 1, 
-  #       legend = c("Scenario 6", "Actual Cases"),
-  #       bty = "n")
-  #dev.off()
-  
   UL_deaths <- Map(age_deaths, forecast_fits$UL, forecaster = forecaster)
   MID_deaths <- Map(age_deaths, forecast_fits$MID, forecaster = forecaster)
   LL_deaths <- Map(age_deaths, forecast_fits$LL, forecaster = forecaster)
@@ -193,12 +154,11 @@ make_graphs <- function(dat, filename, forecaster = FALSE) {
   max_ind <- which.max( sapply(UL_y, max) )
   
   pdf(paste0("deaths_", filename))
-  plot(x = xval, y = UL_y[[max_ind]], type = "n", ylab = "Expected Deaths", xaxt = "n",
-       xlab = "", ylim = c(0, 75), xlim = xval_disp,
-       main = "COVID-19 Death Forecast")
+  plot(x = xval, y = UL_y[[max_ind]], type = "n", ylab = "Expected Daily Deaths", xaxt = "n",
+       xlab = "", ylim = c(0, 50), 
+       xlim = xval_disp,
+       main = "")
   axis.Date(1, at = xax, las = 2)
-  #abline(v = xax, lty = 2, col = "lightgray")
-  #abline(h = seq(0, 5000, 1000), lty = 2, col = "lightgray")
   grid()
   
   # Add forecasts
@@ -227,13 +187,26 @@ make_graphs(forecast_fits_isolated70, "forecast_fits_isolated70.pdf", forecaster
   
 ### Estimated Deaths
 # forecast
-round( sapply( Map(comp_deaths, forecast_fits$UL), sum ), 0 )
-round( sapply( Map(comp_deaths, forecast_fits$MID), sum ), 0 )
-round( sapply( Map(comp_deaths, forecast_fits$LL), sum ), 0 )
+round( sapply( Map(age_deaths, forecast_fits$UL), sum ), 0 )
+round( sapply( Map(age_deaths, forecast_fits$MID), sum ), 0 )
+round( sapply( Map(age_deaths, forecast_fits$LL), sum ), 0 )
 
 # forecast with isolation
-round( sapply( Map(comp_deaths, forecast_fits_isolated70$UL, forecaster = TRUE), sum ), 0 )
-round( sapply( Map(comp_deaths, forecast_fits_isolated70$MID, forecaster = TRUE), sum ), 0 )
-round( sapply( Map(comp_deaths, forecast_fits_isolated70$LL, forecaster = TRUE), sum ), 0 )
+round( sapply( Map(age_deaths, forecast_fits_isolated70$UL, forecaster = TRUE), sum ), 0 )
+round( sapply( Map(age_deaths, forecast_fits_isolated70$MID, forecaster = TRUE), sum ), 0 )
+round( sapply( Map(age_deaths, forecast_fits_isolated70$LL, forecaster = TRUE), sum ), 0 )
 
+### Actual Cases
+sum( actual_dat_trim$Cases[7:nrow(actual_dat_trim)] )
+
+### Estimated Cases
+# forecast
+round( sapply( Map(age_deaths, forecast_fits$UL, just_cases = TRUE), sum ), 0 )
+round( sapply( Map(age_deaths, forecast_fits$MID, just_cases = TRUE), sum ), 0 )
+round( sapply( Map(age_deaths, forecast_fits$LL, just_cases = TRUE), sum ), 0 )
+
+# forecast with isolation
+round( sapply( Map(age_deaths, forecast_fits_isolated70$UL, forecaster = TRUE, just_cases = TRUE), sum ), 0 )
+round( sapply( Map(age_deaths, forecast_fits_isolated70$MID, forecaster = TRUE, just_cases = TRUE), sum ), 0 )
+round( sapply( Map(age_deaths, forecast_fits_isolated70$LL, forecaster = TRUE, just_cases = TRUE), sum ), 0 )
 

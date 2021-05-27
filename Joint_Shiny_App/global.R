@@ -106,12 +106,10 @@
   N_full <- 68
   
   ### Average Multiple Lockdowns
-  L0 <- mean(c(optim_res$optim_res[optim_res$policy == 'No Intervention'],
-               optim_res$optim_res[optim_res$policy == 'School Closure']))
+  L0 <- mean(c(optim_res$optim_res[optim_res$policy == 'No Intervention']))
   L2 <- optim_res$optim_res[optim_res$policy == 'Lockdown Level 2']
   L3 <- optim_res$optim_res[optim_res$policy == 'Lockdown Level 3']
-  L5 <- mean(c(optim_res$optim_res[optim_res$policy == 'Intense Lockdown'],
-               optim_res$optim_res[optim_res$policy == 'Lockdown Level 5'],
+  L5 <- mean(c(optim_res$optim_res[optim_res$policy == 'Lockdown Level 5'],
                optim_res$optim_res[optim_res$policy == 'After-Christmas Level 5']))
   
   ### Linearly interpolate missing lockdown measures
@@ -122,13 +120,11 @@
   rm(L0, L1, L2, L3, L4, L5)
   
   ### Include new interventions into the bootstrap dataset
-  boot_lockdown_scalars['Avg. Lockdown Level 0'] <- (boot_lockdown_scalars$`No Intervention` +
-                                                       boot_lockdown_scalars$`School Closure`)/2
+  boot_lockdown_scalars['Avg. Lockdown Level 0'] <- boot_lockdown_scalars$`No Intervention`
   boot_lockdown_scalars['Avg. Lockdown Level 2'] <- boot_lockdown_scalars$`Lockdown Level 2`
   boot_lockdown_scalars['Avg. Lockdown Level 3'] <- boot_lockdown_scalars$`Lockdown Level 3`
   boot_lockdown_scalars['Avg. Lockdown Level 5'] <- (boot_lockdown_scalars$`Lockdown Level 5` + 
-                                                       boot_lockdown_scalars$`After-Christmas Level 5` +
-                                                       boot_lockdown_scalars$`Intense Lockdown`)/3
+                                                       boot_lockdown_scalars$`After-Christmas Level 5`)/2
   boot_lockdown_scalars['Avg. Lockdown Level 1'] <- (boot_lockdown_scalars$`Avg. Lockdown Level 0` + boot_lockdown_scalars$`Avg. Lockdown Level 2`)/2
   boot_lockdown_scalars['Avg. Lockdown Level 4'] <- (boot_lockdown_scalars$`Avg. Lockdown Level 3` + boot_lockdown_scalars$`Avg. Lockdown Level 5`)/2
   
