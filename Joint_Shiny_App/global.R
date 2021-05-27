@@ -105,18 +105,32 @@
   N_known <- 13
   N_full <- 68
   
-  ### Linearly interpolate missing lockdown measures
-  L1 <- mean(c(optim_res$optim_res[optim_res$policy == 'No Intervention'],
-               optim_res$optim_res[optim_res$policy == 'Lockdown Level 2']))
-  L4 <- mean(c(optim_res$optim_res[optim_res$policy == 'Lockdown Level 3'],
-               optim_res$optim_res[optim_res$policy == 'Lockdown Level 5']))
-  optim_res <- rbind(optim_res, data.frame(policy = paste0('Lockdown Level ', c(1, 4)),
-                                           optim_res = c(L1, L4)))
-  rm(L1, L4)
+  ### Average Multiple Lockdowns
+  L0 <- mean(c(optim_res$optim_res[optim_res$policy == 'No Intervention'],
+               optim_res$optim_res[optim_res$policy == 'School Closure']))
+  L2 <- optim_res$optim_res[optim_res$policy == 'Lockdown Level 2']
+  L3 <- optim_res$optim_res[optim_res$policy == 'Lockdown Level 3']
+  L5 <- mean(c(optim_res$optim_res[optim_res$policy == 'Intense Lockdown'],
+               optim_res$optim_res[optim_res$policy == 'Lockdown Level 5'],
+               optim_res$optim_res[optim_res$policy == 'After-Christmas Level 5']))
   
-  ### Include linearly interpolated interventions into the bootstrap dataset
-  boot_lockdown_scalars['Lockdown Level 1'] <- (boot_lockdown_scalars$`No Intervention` + boot_lockdown_scalars$`Lockdown Level 2`)/2
-  boot_lockdown_scalars['Lockdown Level 4'] <- (boot_lockdown_scalars$`Lockdown Level 3` + boot_lockdown_scalars$`Lockdown Level 5`)/2
+  ### Linearly interpolate missing lockdown measures
+  L1 <- mean(c(L0, L2))
+  L4 <- mean(c(L3, L5))
+  optim_res <- rbind(optim_res, data.frame(policy = paste0('Avg. Lockdown Level ', 0:5),
+                                           optim_res = c(L0, L1, L2, L3, L4, L5)))
+  rm(L0, L1, L2, L3, L4, L5)
+  
+  ### Include new interventions into the bootstrap dataset
+  boot_lockdown_scalars['Avg. Lockdown Level 0'] <- (boot_lockdown_scalars$`No Intervention` +
+                                                       boot_lockdown_scalars$`School Closure`)/2
+  boot_lockdown_scalars['Avg. Lockdown Level 2'] <- boot_lockdown_scalars$`Lockdown Level 2`
+  boot_lockdown_scalars['Avg. Lockdown Level 3'] <- boot_lockdown_scalars$`Lockdown Level 3`
+  boot_lockdown_scalars['Avg. Lockdown Level 5'] <- (boot_lockdown_scalars$`Lockdown Level 5` + 
+                                                       boot_lockdown_scalars$`After-Christmas Level 5` +
+                                                       boot_lockdown_scalars$`Intense Lockdown`)/3
+  boot_lockdown_scalars['Avg. Lockdown Level 1'] <- (boot_lockdown_scalars$`Avg. Lockdown Level 0` + boot_lockdown_scalars$`Avg. Lockdown Level 2`)/2
+  boot_lockdown_scalars['Avg. Lockdown Level 4'] <- (boot_lockdown_scalars$`Avg. Lockdown Level 3` + boot_lockdown_scalars$`Avg. Lockdown Level 5`)/2
   
   ### Use the transposed bootstrapped data
   boot_scales_t <- cbind( policy = names(boot_lockdown_scalars), 

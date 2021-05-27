@@ -6,24 +6,26 @@ source("global.R")
 
 ### Solve SEIR ODEs
 # Set dates  
-start_date <- as.Date("2020-12-01")
-date_start_seq <- as.Date(c("2020-12-01", "2020-12-31"))
-date_start_end <- as.Date(c("2020-12-30", "2021-01-25"))
+start_date <- as.Date("2021-02-01")
+date_start_seq <- c(start_date, start_date + 30)
+date_start_end <- c(start_date + 29, start_date + 55)
 tmax <- as.numeric( difftime(start_date + 55, as.Date('2020-02-29'), units = "days") )
 
 # Set lockdown levels
 all_levs <- vector("list", 7)
-all_levs[[1]] <- rep(optim_res$policy[1], 2)
-all_levs[[2]] <- rep(optim_res$policy[8], 2)
-all_levs[[3]] <- rep(optim_res$policy[9], 2)
-all_levs[[4]] <- c( optim_res$policy[8], optim_res$policy[9] )
-all_levs[[5]] <- c( optim_res$policy[7], optim_res$policy[9] )
-all_levs[[6]] <- c( optim_res$policy[10], optim_res$policy[9] )
-all_levs[[7]] <- c( optim_res$policy[1], optim_res$policy[9] )
+str <- 'Avg. Lockdown Level '
+all_levs[[1]] <- paste0(str, rep(0, 2))
+all_levs[[2]] <- paste0(str, rep(3, 2))
+all_levs[[3]] <- paste0(str, rep(5, 2))
+all_levs[[4]] <- paste0(str, c(3, 5))
+all_levs[[5]] <- paste0(str, c(2, 5))
+all_levs[[6]] <- paste0(str, c(1, 5))
+all_levs[[7]] <- paste0(str, c(0, 5))
 len <- length(all_levs)
 
 # Find estimated cost
 diff_date <- as.numeric( difftime(date_start_end, date_start_seq) )
+est_costs$Level[1:6] <- paste0(str, 0:5) 
 est_costs$Estimated_Costs[which(est_costs$Level %in% all_levs[[2]])]
 cost_extract <- function(x) {
   y <- which(est_costs$Level %in% x)
@@ -32,7 +34,7 @@ cost_extract <- function(x) {
 }
 
 all_costs <- lapply(all_levs, cost_extract) 
-lapply(all_costs, "%*%", diff_date)
+sapply(all_costs, "%*%", diff_date)
 
 # Create lockdown forecast data
 lockdown_forecast <- optim_dat <- all_linfo <- vector("list", 7)
@@ -61,8 +63,8 @@ clusterExport(
 
 # Run SEIR Models
 UL <- MID <- LL <- vector("list", len)
-for (i in 1:len) {
-  linfo <- all_linfo[[i]]
+for (j in 1:len) {
+  linfo <- all_linfo[[j]]
   All_Runs <- foreach(i = 5:ncol(linfo), .combine = rbind) %dopar% {
     SEIR_model_simulation(pars = def_pars,
                           contacts_ireland = contacts,
@@ -75,17 +77,17 @@ for (i in 1:len) {
   }
   
   All_Runs <- split(All_Runs, All_Runs$time)
-  UL[[i]] <- foreach(x = All_Runs, .combine = rbind,
+  UL[[j]] <- foreach(x = All_Runs, .combine = rbind,
                      .final = as.data.frame) %dopar% {
     sapply(x, quantile, probs = 0.975, names = FALSE)
   }
-  LL[[i]] <- foreach(x = All_Runs, .combine = rbind,
+  LL[[j]] <- foreach(x = All_Runs, .combine = rbind,
                 .final = as.data.frame) %dopar% {
     sapply(x, quantile, probs = 0.025, names = FALSE)
   }
   rm(All_Runs)
   
-  MID[[i]] <- SEIR_model_simulation(pars = def_pars,
+  MID[[j]] <- SEIR_model_simulation(pars = def_pars,
                                     contacts_ireland = contacts,
                                     dateStart = as.Date('2020-02-29'),
                                     startval = dub_xstart,
@@ -124,8 +126,8 @@ clusterExport(
 
 # Run SEIR Models
 UL <- MID <- LL <- vector("list", len)
-for (i in 1:len) {
-  linfo <- all_linfo[[i]]
+for (j in 1:len) {
+  linfo <- all_linfo[[j]]
   All_Runs <- foreach(i = 5:ncol(linfo), .combine = rbind) %dopar% {
     SEIR_model_simulation(pars = def_pars,
                           contacts_ireland = contacts,
@@ -141,17 +143,17 @@ for (i in 1:len) {
   }
   
   All_Runs <- split(All_Runs, All_Runs$time)
-  UL[[i]] <- foreach(x = All_Runs, .combine = rbind,
+  UL[[j]] <- foreach(x = All_Runs, .combine = rbind,
                      .final = as.data.frame) %dopar% {
     sapply(x, quantile, probs = 0.975, names = FALSE)
   }
-  LL[[i]] <- foreach(x = All_Runs, .combine = rbind,
+  LL[[j]] <- foreach(x = All_Runs, .combine = rbind,
                 .final = as.data.frame) %dopar% {
     sapply(x, quantile, probs = 0.025, names = FALSE)
   }
   rm(All_Runs)
   
-  MID[[i]] <- SEIR_model_simulation(pars = def_pars,
+  MID[[j]] <- SEIR_model_simulation(pars = def_pars,
                                     contacts_ireland = contacts,
                                     dateStart = as.Date('2020-02-29'),
                                     startval = dub_xstart,

@@ -58,8 +58,8 @@ load_data <- function(data_path = 'data/', county = 'Dublin',
         interventions_file, col_types = cols()
       ) %>% 
       mutate(
-        start = as.Date(start, "%d/%m/%y"),
-        end = as.Date(end, "%d/%m/%y")
+        start = as.Date(start, "%d/%m/%Y"),
+        end = as.Date(end, "%d/%m/%Y")
       ) 
     names(out)[[count]] <- 'interventions_info'
   }
@@ -68,7 +68,8 @@ load_data <- function(data_path = 'data/', county = 'Dublin',
   if (load_bootstrapped_scalars) {
     count <- count + 1
     out[[count]] <- read_csv(paste0(data_path, 'bootstrapped_scalars.csv'),
-                                     col_types = paste(rep("d", 9), collapse = ''))
+                                     col_types = paste(rep("d", 12), collapse = ''))
+    names(out[[count]])[c(10, 12)] <- c("Pre-Christmas Level 3", "After-Christmas Level 5")
     names(out)[[count]] <- 'boot_lockdown_scalars'
   }
   

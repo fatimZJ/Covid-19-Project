@@ -7,13 +7,14 @@ source("global.R")
 load("data/forecast_fits.Rdata")
 load("data/forecast_fits_isolated70.Rdata")
 
-actual_dat <- read_csv("data/Daily_County_Cases.csv") %>% 
+actual_dat <- read_csv("data/COVID-19_County_Statistics_HPSC_Ireland_(Point_Geometry)_.csv") %>% 
   filter(CountyName == "Dublin") %>%
-  select(TimeStamp, ConfirmedCovidCases)
-actual_dat <- actual_dat[-1, ]
-actual_dat$Date <- as.Date(substr(actual_dat$TimeStamp, 1, 10), format = "%Y/%m/%d")
+  select(TimeStampDate, ConfirmedCovidCases)
+actual_dat <- actual_dat[-(1:2), ]
+actual_dat$Date <- as.Date(substr(actual_dat$TimeStampDate, 1, 10), format = "%Y/%m/%d")
 actual_dat$Cases <- c(0, diff(actual_dat$ConfirmedCovidCases))
-actual_dat_trim <- filter(actual_dat, (Date >= as.Date("2020-11-25")) & (Date <= as.Date("2021-01-26")))
+#actual_dat_trim <- filter(actual_dat, (Date >= as.Date("2020-11-25")) & (Date <= as.Date("2021-01-26")))
+actual_dat_trim <- filter(actual_dat, (Date >= as.Date("2021-01-26")) & (Date <= as.Date("2021-03-28")))
 
 ### Sum across compartments
 comp_sel <- function(x, y) {
@@ -39,7 +40,7 @@ age_deaths <- function(x, forecaster = FALSE) {
   denom_1 <- def_pars["Dv"] - def_pars["Cv"] + def_pars["L"]
   denom_2 <- denom_1 - def_pars["TT"]
   N <- nrow(x)
-  get_rows <- (N-63):332
+  get_rows <- (N-63):N
   moved_removed <- (x[get_rows, 66:81] + x[get_rows, 114:129])/denom_1 + x[get_rows, 98:113]/denom_2
   if (!forecaster) {
     ags <- matrix(0, nrow = nrow(moved_removed), ncol = 8)
@@ -94,10 +95,12 @@ make_graphs <- function(dat, filename, forecaster = FALSE) {
     
   ### Draw Plots
   # Prepare x axis
-  start_date <- as.Date("2020-12-01")
+  #start_date <- as.Date("2020-12-01")
+  start_date <- as.Date("2021-02-01")
   xax <- seq.Date(start_date - 7, start_date + 7*8, 7)
   xval <- seq.Date(min(xax), max(xax), 1)
-  xval_disp <- as.Date(c("2020-11-27", "2021-01-23"))
+  #xval_disp <- as.Date(c("2020-11-27", "2021-01-23"))
+  xval_disp <- as.Date(c("2021-01-28", "2021-03-26"))
   n_date <- as.numeric( difftime(max(xax), min(xax), units = "days") )
   
   # Draw empty plot that we will add to
@@ -116,7 +119,7 @@ make_graphs <- function(dat, filename, forecaster = FALSE) {
   
   pdf(filename)
   plot(x = xval, y = UL_y[[max_ind]], type = "n", ylab = "Cases", xaxt = "n",
-       xlab = "", ylim = c(0, max(c(UL_y[[max_ind]], actual_dat_trim$Cases))), xlim = xval_disp,
+       xlab = "", ylim = c(0, 10000), xlim = xval_disp,
        main = "COVID-19 Case Forecast")
   axis.Date(1, at = xax, las = 2)
   #abline(v = xax, lty = 2, col = "lightgray")
@@ -191,7 +194,7 @@ make_graphs <- function(dat, filename, forecaster = FALSE) {
   
   pdf(paste0("deaths_", filename))
   plot(x = xval, y = UL_y[[max_ind]], type = "n", ylab = "Expected Deaths", xaxt = "n",
-       xlab = "", ylim = c(0, max(UL_y[[max_ind]])), xlim = xval_disp,
+       xlab = "", ylim = c(0, 75), xlim = xval_disp,
        main = "COVID-19 Death Forecast")
   axis.Date(1, at = xax, las = 2)
   #abline(v = xax, lty = 2, col = "lightgray")

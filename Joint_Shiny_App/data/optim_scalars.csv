@@ -1,10 +1,13 @@
 policy,optim_res
-No Intervention,1.463714
-School Closure,1.723324
-Intense Lockdown,0.1577885
-Relax Intervention 1,0.04422724
-Relax Intervention 2,0.01435703
-Relax Intervention 3,0.5558354
-Lockdown Level 2,0.4308891
-Lockdown Level 3,0.3177984
-Lockdown Level 5,0.1610713
+No Intervention,1.02
+School Closure,2.115
+Intense Lockdown,0.155
+Relax Intervention 1,0.054
+Relax Intervention 2,0.156
+Relax Intervention 3,0.424
+Lockdown Level 2,0.459
+Lockdown Level 3,0.319
+Lockdown Level 5,0.152
+Pre-Christmas Level 3,0.832
+Holiday period,0.727
+After-Christmas Level 5,0.017
