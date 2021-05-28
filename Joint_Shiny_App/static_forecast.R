@@ -3,6 +3,7 @@
 ### Load in libraries and data
 setwd("Joint_Shiny_App/")
 source("global.R")
+library(xtable)
 
 ### Solve SEIR ODEs
 # Set dates  
@@ -35,7 +36,20 @@ cost_extract <- function(x) {
 }
 
 all_costs <- lapply(all_levs, cost_extract) 
-sapply(all_costs, "%*%", diff_date)
+costs <- sapply(all_costs, "%*%", diff_date)
+nms <- c( 'No intervention', 'Level 3', 'Level 5',
+          'Level 3 > Level 5', 'Level 2 > Level 5',
+          'Level 1 > Level 5', 'No Intervention > Level 5')
+costs_df <- data.frame(Policy = nms, Cost = costs)
+
+pdf('projected_costs.pdf', height = 10)
+par(mar = c(8, 4, 4, 2) + 0.1)
+barplot(height = costs_df$Cost[-7], las = 2, ylim = c(-200, 400),
+        col = c('orange', rep('dodgerblue', 5)), 
+        names.arg = costs_df$Policy[-7], 
+        main = 'Projected Costs (in billions of euros)')
+abline(h = seq(-200, 400, 100), lty = 3, col = 'grey')
+dev.off()
 
 # Create lockdown forecast data
 lockdown_forecast <- optim_dat <- all_linfo <- vector("list", 7)

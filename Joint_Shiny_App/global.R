@@ -109,8 +109,7 @@
   L0 <- mean(c(optim_res$optim_res[optim_res$policy == 'No Intervention']))
   L2 <- optim_res$optim_res[optim_res$policy == 'Lockdown Level 2']
   L3 <- optim_res$optim_res[optim_res$policy == 'Lockdown Level 3']
-  L5 <- mean(c(optim_res$optim_res[optim_res$policy == 'Lockdown Level 5'],
-               optim_res$optim_res[optim_res$policy == 'After-Christmas Level 5']))
+  L5 <- optim_res$optim_res[optim_res$policy == 'Lockdown Level 5']
   
   ### Linearly interpolate missing lockdown measures
   L1 <- mean(c(L0, L2))
@@ -123,8 +122,7 @@
   boot_lockdown_scalars['Avg. Lockdown Level 0'] <- boot_lockdown_scalars$`No Intervention`
   boot_lockdown_scalars['Avg. Lockdown Level 2'] <- boot_lockdown_scalars$`Lockdown Level 2`
   boot_lockdown_scalars['Avg. Lockdown Level 3'] <- boot_lockdown_scalars$`Lockdown Level 3`
-  boot_lockdown_scalars['Avg. Lockdown Level 5'] <- (boot_lockdown_scalars$`Lockdown Level 5` + 
-                                                       boot_lockdown_scalars$`After-Christmas Level 5`)/2
+  boot_lockdown_scalars['Avg. Lockdown Level 5'] <- (boot_lockdown_scalars$`Lockdown Level 5`)
   boot_lockdown_scalars['Avg. Lockdown Level 1'] <- (boot_lockdown_scalars$`Avg. Lockdown Level 0` + boot_lockdown_scalars$`Avg. Lockdown Level 2`)/2
   boot_lockdown_scalars['Avg. Lockdown Level 4'] <- (boot_lockdown_scalars$`Avg. Lockdown Level 3` + boot_lockdown_scalars$`Avg. Lockdown Level 5`)/2
   

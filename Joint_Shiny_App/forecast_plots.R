@@ -2,6 +2,7 @@
 
 ### Load in libraries and data
 library(scales)
+library(xtable)
 setwd("Joint_Shiny_App/")
 source("global.R")
 load("data/forecast_fits.Rdata")
@@ -35,11 +36,11 @@ scenarios <- c("No Intervention -> No Intervention",
                "Level 1 -> Level 5")
 
 ### Calculate deaths
-age_deaths <- function(x, forecaster = FALSE, just_cases = FALSE) {
+age_deaths <- function(x, forecaster = FALSE, just_cases = FALSE, back = 63) {
   denom_1 <- def_pars["Dv"] - def_pars["Cv"] + def_pars["L"]
   denom_2 <- denom_1 - def_pars["TT"]
   N <- nrow(x)
-  get_rows <- (N-56):N
+  get_rows <- (N-back):N
   moved_removed <- (x[get_rows, 66:81] + x[get_rows, 114:129])/denom_1 + x[get_rows, 98:113]/denom_2
   if (!forecaster) {
     ags <- matrix(0, nrow = nrow(moved_removed), ncol = 8)
@@ -185,28 +186,44 @@ make_graphs <- function(dat, filename, forecaster = FALSE) {
 make_graphs(forecast_fits, "forecast_fits.pdf")
 make_graphs(forecast_fits_isolated70, "forecast_fits_isolated70.pdf", forecaster = TRUE)
   
-### Estimated Deaths
-# forecast
-round( sapply( Map(age_deaths, forecast_fits$UL), sum ), 0 )
-round( sapply( Map(age_deaths, forecast_fits$MID), sum ), 0 )
-round( sapply( Map(age_deaths, forecast_fits$LL), sum ), 0 )
+### Projection Plots
+policy <- c('No Intervention', 'Level 3', 'Level 5', 'Level 3 > Level 5',
+            'Level 2 > Level 5', 'Level 1 > Level 5')
+UL_deaths <- round( sapply( Map(age_deaths, forecast_fits$UL, back = 56), sum ), 0 )[-7]
+MID_deaths <- round( sapply( Map(age_deaths, forecast_fits$MID, back = 56), sum ), 0 )[-7]
+LL_deaths <- round( sapply( Map(age_deaths, forecast_fits$LL, back = 56), sum ), 0 )[-7]
 
-# forecast with isolation
-round( sapply( Map(age_deaths, forecast_fits_isolated70$UL, forecaster = TRUE), sum ), 0 )
-round( sapply( Map(age_deaths, forecast_fits_isolated70$MID, forecaster = TRUE), sum ), 0 )
-round( sapply( Map(age_deaths, forecast_fits_isolated70$LL, forecaster = TRUE), sum ), 0 )
+UL_cases <- round( sapply( Map(age_deaths, forecast_fits$UL, just_cases = TRUE, back = 56), sum ), 0 )[-7]
+MID_cases <- round( sapply( Map(age_deaths, forecast_fits$MID, just_cases = TRUE, back = 56), sum ), 0 )[-7]
+LL_cases <- round( sapply( Map(age_deaths, forecast_fits$LL, just_cases = TRUE, back = 56), sum ), 0 )[-7]
+
+projection_df <- data.frame(Policy = policy, 
+                            Cases = paste0(MID_cases, ' (', LL_cases, ', ', UL_cases, ')'),
+                            Deaths = paste0(MID_deaths, ' (', LL_deaths, ', ', UL_deaths, ')'))
+
+print(xtable(projection_df), include.rownames = FALSE)
+
+### Projection Plots (with isolation)
+UL_deaths2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$UL, forecaster = TRUE, back = 56), sum ), 0 )[-7]
+MID_deaths2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$MID, forecaster = TRUE, back = 56), sum ), 0 )[-7]
+LL_deaths2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$LL, forecaster = TRUE, back = 56), sum ), 0 )[-7]
+
+UL_cases2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$UL, forecaster = TRUE, just_cases = TRUE, back = 56), sum ), 0 )[-7]
+MID_cases2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$MID, forecaster = TRUE, just_cases = TRUE, back = 56), sum ), 0 )[-7]
+LL_cases2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$LL, forecaster = TRUE, just_cases = TRUE, back = 56), sum ), 0 )[-7]
+
+projection_df2 <- data.frame(Policy = policy, 
+                             Cases = paste0(MID_cases2, ' (', LL_cases2, ', ', UL_cases2, ')'),
+                             Deaths = paste0(MID_deaths2, ' (', LL_deaths2, ', ', UL_deaths2, ')'))
+
+print(xtable(projection_df2), include.rownames = FALSE)
 
 ### Actual Cases
 sum( actual_dat_trim$Cases[7:nrow(actual_dat_trim)] )
 
-### Estimated Cases
-# forecast
-round( sapply( Map(age_deaths, forecast_fits$UL, just_cases = TRUE), sum ), 0 )
-round( sapply( Map(age_deaths, forecast_fits$MID, just_cases = TRUE), sum ), 0 )
-round( sapply( Map(age_deaths, forecast_fits$LL, just_cases = TRUE), sum ), 0 )
-
-# forecast with isolation
-round( sapply( Map(age_deaths, forecast_fits_isolated70$UL, forecaster = TRUE, just_cases = TRUE), sum ), 0 )
-round( sapply( Map(age_deaths, forecast_fits_isolated70$MID, forecaster = TRUE, just_cases = TRUE), sum ), 0 )
-round( sapply( Map(age_deaths, forecast_fits_isolated70$LL, forecaster = TRUE, just_cases = TRUE), sum ), 0 )
-
+### Actual Case Plot
+pdf("Case_Plot.pdf")
+plot(Cases ~ Date, data = actual_dat_trim, type = "l", ylim = c(0, max(Cases)),
+     col = 'dodgerblue')
+grid()
+dev.off()
