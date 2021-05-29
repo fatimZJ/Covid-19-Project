@@ -218,8 +218,35 @@ projection_df2 <- data.frame(Policy = policy,
 
 print(xtable(projection_df2), include.rownames = FALSE)
 
-### Actual Cases
-sum( actual_dat_trim$Cases[7:nrow(actual_dat_trim)] )
+### Plots
+all_cases <- sum( actual_dat_trim$Cases[7:nrow(actual_dat_trim)] )
+pdf('case_projections.pdf')
+par(mar = c(8, 4, 4, 2) + 0.1)
+plot(MID_cases[-1], ylim = c(0, 200000), col = 'white',
+     ylab = 'Expected Cases', xlab = '', xaxt = 'n', yaxt = 'n')
+axis(1, at = 1:5, labels = policy[-1], las = 2)
+axis(2, at = seq(0, 200000, 50000), labels = seq(0, 20, 5))
+mtext(expression(x10^4), at = c(1, 20000))
+grid()
+arrows(x0 = 1:5, y0 = LL_cases[-1], y1 = UL_cases[-1], angle = 90,
+       code = 3, length = 0.1, col = 'dodgerblue')
+points(MID_cases[-1], pch = '-', cex = 2, col = 'dodgerblue')
+abline(h = all_cases, lty = 2, col = 'orange')
+dev.off()
+
+pdf('case_projections_isolated.pdf')
+par(mar = c(8, 4, 4, 2) + 0.1)
+plot(MID_cases2[-1], ylim = c(0, 200000), col = 'white',
+     ylab = 'Expected Cases', xlab = '', xaxt = 'n', yaxt = 'n')
+axis(1, at = 1:5, labels = policy[-1], las = 2)
+axis(2, at = seq(0, 200000, 50000), labels = seq(0, 20, 5))
+mtext(expression(x10^4), at = c(1, 20000))
+grid()
+arrows(x0 = 1:5, y0 = LL_cases2[-1], y1 = UL_cases2[-1], angle = 90,
+       code = 3, length = 0.1, col = 'dodgerblue')
+points(MID_cases2[-1], pch = '-', cex = 2, col = 'dodgerblue')
+abline(h = all_cases, lty = 2, col = 'orange')
+dev.off()
 
 ### Actual Case Plot
 pdf("Case_Plot.pdf")

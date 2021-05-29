@@ -2,7 +2,6 @@
 
 sidebar <- dashboardSidebar(
   sidebarMenu(
-    #menuItem("SEIR Model Dashboard", tabName = "seir", icon = icon("dashboard")),
     menuItem("Forecast Settings", tabName = "forecast", icon = icon("wrench")),
     menuItem("Info", tabName = "info", icon = icon("info"))
   )
@@ -23,64 +22,7 @@ body <- dashboardBody(
               uiOutput("sfi_link")
             )
     ),
-    #Tab 2: Model Dashboard
-    tabItem(tabName = "seir", 
-            fluidRow(
-              box( title = "Inputs", width = 2, solidHeader = TRUE, status = "warning",
-                   numericInput(inputId = "R0", label = "Basic Reproduction Number:", min = 0.1, value = 3.7),
-                   numericInput(inputId = "L", label = "Latent Period:", min = 0.1, value = 3.7, step = 0.1),
-                   numericInput(inputId = "Cv", label = "Incubation Period:", min = 0.1, value = 5.8, step = 0.1),
-                   numericInput(inputId = "Dv", label = "Infectious Period:", min = 0.1, value = 11.6, step = 0.1),
-                   numericInput(inputId = "h", label = "Asymptomatic Transmission:", min = 0.01, max = 1, value = 0.55,
-                                step = 0.01),
-                   numericInput(inputId = "k", label = "Isolated Transmission:", min = 0.01, max = 1, value = 0.05,
-                                step = 0.01),
-                   numericInput(inputId = "f", label = "Proportion of Asymptomatic:", min = 0.01, max = 1, value = 0.2,
-                                step = 0.01),
-                   numericInput(inputId = "tv", label = "Proportion of Tested:", min = 0.01, max = 1, value = 0.8,
-                                step = 0.01), 
-                   numericInput(inputId = "q", label = "Proportion of Isolated:", min = 0.01, max = 1, value = 0.1,
-                                step = 0.01),
-                   numericInput(inputId = "TT", label = "Average Test Result Time:", min = 0.1, value = 7, step = 0.1),
-                   tags$hr(),
-                   selectInput(inputId = "I_type", label = "Type of infected to display:",
-                               choices = list("All", "Symptomatic", "Pre-symptomatic", "Asymptomatic"),
-                               selected = "All"),
-                   dateInput(inputId = "end_date", label = "End Date:", value = td,
-                           min = as.Date('2020-02-29'), max = td),
-                   checkboxInput(inputId = "shade", label = "Shade Intervention Dates", value = TRUE),
-                   checkboxGroupInput(inputId = "age_sel", label = "Select Ages to Display:", 
-                                      choices = def_age_groups, selected = def_age_groups)
-              ),
-              box( width = 10, title = "Dublin SEIR Model Outputs", solidHeader = TRUE,
-                   status = "primary",
-                                fluidRow(
-                                  column(12,
-                                         plotlyOutput("summary_plot_dub") %>% 
-                                           withSpinner(color = "#0dc5c1", size = 2, hide.ui = FALSE)),
-                                  column(6,
-                                         plotlyOutput("S_age_plot_dub") %>% 
-                                           withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
-                                  ),
-                                  column(6, 
-                                         plotlyOutput("E_age_plot_dub") %>% 
-                                           withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
-                                  ),
-                                  column(6, 
-                                         plotlyOutput("I_age_plot_dub") %>% 
-                                           withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
-                                  ),
-                                  column(6, 
-                                         plotlyOutput("R_age_plot_dub") %>% 
-                                           withSpinner(color = "#0dc5c1", size = 1, hide.ui = FALSE)
-                                  )
-                                )
-                      ),
-                      
-                      )
-              
-    ),
-    #Tab 3: Forecast Settings
+    #Tab 2: Forecast Settings
     tabItem(tabName = "forecast",
             fluidRow(
               box( title = "8 Week Compartment Projection", width = 10, solidHeader = TRUE,
@@ -94,7 +36,8 @@ body <- dashboardBody(
                                             "Asymptomatic Infected", "Removed"),
                              selected = "Infected:All"),
                  dateInput(inputId = "start_date", label = "Start Date:", 
-                           value = td, min = as.Date('2020-02-29'), max = td),
+                           value = as.Date('2021-02-01'), min = as.Date('2020-02-29'), 
+                           max = as.Date('2021-02-01')),
                  checkboxGroupInput(inputId = "forecast_age_sel", label = "Age Groups:", 
                                       choices = forecast_age_groups, selected = forecast_age_groups)
                  )
