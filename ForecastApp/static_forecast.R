@@ -44,11 +44,11 @@ costs_df <- data.frame(Policy = nms, Cost = costs)
 
 pdf('projected_costs.pdf', height = 10)
 par(mar = c(8, 4, 4, 2) + 0.1)
-barplot(height = costs_df$Cost[-7], las = 2, ylim = c(-200, 400),
+barplot(height = costs_df$Cost[-7], las = 2, ylim = c(-15, 15),
         col = c('orange', rep('dodgerblue', 5)), 
         names.arg = costs_df$Policy[-7], 
         main = 'Projected Costs (in billions of euros)')
-abline(h = seq(-200, 400, 100), lty = 3, col = 'grey')
+abline(h = seq(-15, 15, 5), lty = 3, col = 'grey')
 dev.off()
 
 # Create lockdown forecast data

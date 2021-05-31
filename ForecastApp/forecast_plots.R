@@ -189,13 +189,13 @@ make_graphs(forecast_fits_isolated70, "forecast_fits_isolated70.pdf", forecaster
 ### Projection Plots
 policy <- c('No Intervention', 'Level 3', 'Level 5', 'Level 3 > Level 5',
             'Level 2 > Level 5', 'Level 1 > Level 5')
-UL_deaths <- round( sapply( Map(age_deaths, forecast_fits$UL, back = 56), sum ), 0 )[-7]
-MID_deaths <- round( sapply( Map(age_deaths, forecast_fits$MID, back = 56), sum ), 0 )[-7]
-LL_deaths <- round( sapply( Map(age_deaths, forecast_fits$LL, back = 56), sum ), 0 )[-7]
+UL_deaths <- round( sapply( Map(age_deaths, forecast_fits$UL, back = 56), sum )/10, 0 )[-7]
+MID_deaths <- round( sapply( Map(age_deaths, forecast_fits$MID, back = 56), sum )/10, 0 )[-7]
+LL_deaths <- round( sapply( Map(age_deaths, forecast_fits$LL, back = 56), sum )/10, 0 )[-7]
 
-UL_cases <- round( sapply( Map(age_deaths, forecast_fits$UL, just_cases = TRUE, back = 56), sum ), 0 )[-7]
-MID_cases <- round( sapply( Map(age_deaths, forecast_fits$MID, just_cases = TRUE, back = 56), sum ), 0 )[-7]
-LL_cases <- round( sapply( Map(age_deaths, forecast_fits$LL, just_cases = TRUE, back = 56), sum ), 0 )[-7]
+UL_cases <- round( sapply( Map(age_deaths, forecast_fits$UL, just_cases = TRUE, back = 56), sum )/1000, 0 )[-7]
+MID_cases <- round( sapply( Map(age_deaths, forecast_fits$MID, just_cases = TRUE, back = 56), sum )/1000, 0 )[-7]
+LL_cases <- round( sapply( Map(age_deaths, forecast_fits$LL, just_cases = TRUE, back = 56), sum )/1000, 0 )[-7]
 
 projection_df <- data.frame(Policy = policy, 
                             Cases = paste0(MID_cases, ' (', LL_cases, ', ', UL_cases, ')'),
@@ -204,13 +204,13 @@ projection_df <- data.frame(Policy = policy,
 print(xtable(projection_df), include.rownames = FALSE)
 
 ### Projection Plots (with isolation)
-UL_deaths2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$UL, forecaster = TRUE, back = 56), sum ), 0 )[-7]
-MID_deaths2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$MID, forecaster = TRUE, back = 56), sum ), 0 )[-7]
-LL_deaths2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$LL, forecaster = TRUE, back = 56), sum ), 0 )[-7]
+UL_deaths2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$UL, forecaster = TRUE, back = 56), sum )/10, 0 )[-7]
+MID_deaths2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$MID, forecaster = TRUE, back = 56), sum )/10, 0 )[-7]
+LL_deaths2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$LL, forecaster = TRUE, back = 56), sum )/10, 0 )[-7]
 
-UL_cases2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$UL, forecaster = TRUE, just_cases = TRUE, back = 56), sum ), 0 )[-7]
-MID_cases2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$MID, forecaster = TRUE, just_cases = TRUE, back = 56), sum ), 0 )[-7]
-LL_cases2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$LL, forecaster = TRUE, just_cases = TRUE, back = 56), sum ), 0 )[-7]
+UL_cases2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$UL, forecaster = TRUE, just_cases = TRUE, back = 56), sum )/1000, 0 )[-7]
+MID_cases2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$MID, forecaster = TRUE, just_cases = TRUE, back = 56), sum )/1000, 0 )[-7]
+LL_cases2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$LL, forecaster = TRUE, just_cases = TRUE, back = 56), sum )/1000, 0 )[-7]
 
 projection_df2 <- data.frame(Policy = policy, 
                              Cases = paste0(MID_cases2, ' (', LL_cases2, ', ', UL_cases2, ')'),
