@@ -3,7 +3,7 @@
 ### Load in libraries and data
 library(scales)
 library(xtable)
-setwd("Joint_Shiny_App/")
+setwd("ForecastApp/")
 source("global.R")
 load("data/forecast_fits.Rdata")
 load("data/forecast_fits_isolated70.Rdata")

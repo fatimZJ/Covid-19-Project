@@ -1,7 +1,7 @@
 ##### Create and Save Projections for 8 weeks after 1st December 2020
 
 ### Load in libraries and data
-setwd("Joint_Shiny_App/")
+setwd("ForecastApp/")
 source("global.R")
 library(xtable)
 
