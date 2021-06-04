@@ -58,10 +58,12 @@
   td <- as.Date(Sys.time())
   
   ### Starting values for ODE solvers
-  dub_xstart <- c(dub_population$popage - 15/16,
-                  rep(1, 16),
-                  rep(1/16, 16),
-                  rep(0, 16 * 6))
+  num_exp <- 14.5344/16
+  num_inf <- 0.947286/16 
+  
+  start_non_S <- c(rep(num_exp, 16), rep(num_inf, 16), rep(0, 16 * 7))
+  
+  dub_xstart <- c(dub_population$popage - num_exp - num_inf, start_non_S)
   names(dub_xstart) <- c(paste0('S_',1:16),
                          paste0('Ev_',1:16),
                          paste0('Ip_',1:16),
@@ -70,14 +72,15 @@
                          paste0('It_',1:16),
                          paste0('Iti_',1:16),
                          paste0('Iq_',1:16),
-                         paste0('R_',1:16))
+                         paste0('R_',1:16),
+                         paste0('Cc_',1:16))
 
   ### Default SEIR model parameters
-  def_pars <- c(3.7, 5.8, 11.6, 0.55, 0.2, 0.8, 0.1, 0.05, 7)
+  def_pars <- c(3.8, 5.8, 13.5, 0.55, 0.2, 0.8, 0.1, 0.05, 7)
   names(def_pars) <- c('L', 'Cv', 'Dv', 'h', 'f', 'tv', 'q', 'k', 'TT')
   
   ### Starting transmission rate
-  dub_def_beta <- getbeta(3.7, pars = def_pars, p_age = dub_population$propage,
+  dub_def_beta <- getbeta(3.4, pars = def_pars, p_age = dub_population$propage,
             CONTACTMATRIX = contacts)
   
   ### 'Known' and full dataset sizes for forecast tab 

@@ -13,7 +13,7 @@ actual_dat <- read_csv("data/COVID-19_County_Statistics_HPSC_Ireland_(Point_Geom
   select(TimeStampDate, ConfirmedCovidCases)
 actual_dat <- actual_dat[-(1:2), ]
 actual_dat$Date <- as.Date(substr(actual_dat$TimeStampDate, 1, 10), format = "%Y/%m/%d")
-actual_dat$Cases <- c(0, diff(actual_dat$ConfirmedCovidCases))
+actual_dat$Cases <- c(1, diff(actual_dat$ConfirmedCovidCases))
 actual_dat_trim <- filter(actual_dat, (Date >= as.Date("2021-01-26")) & (Date <= as.Date("2021-03-28")))
 
 ### Sum across compartments
@@ -118,7 +118,7 @@ make_graphs <- function(dat, filename, forecaster = FALSE) {
   
   pdf(filename)
   plot(x = xval, y = UL_y[[max_ind]], type = "n", ylab = "Expected Daily Cases", xaxt = "n",
-       xlab = "", ylim = c(0, 6500), 
+       xlab = "", ylim = c(0, 11000), 
        xlim = xval_disp,
        main = "")
   axis.Date(1, at = xax, las = 2)
@@ -156,7 +156,7 @@ make_graphs <- function(dat, filename, forecaster = FALSE) {
   
   pdf(paste0("deaths_", filename))
   plot(x = xval, y = UL_y[[max_ind]], type = "n", ylab = "Expected Daily Deaths", xaxt = "n",
-       xlab = "", ylim = c(0, 50), 
+       xlab = "", ylim = c(0, 45), 
        xlim = xval_disp,
        main = "")
   axis.Date(1, at = xax, las = 2)
@@ -189,32 +189,40 @@ make_graphs(forecast_fits_isolated70, "forecast_fits_isolated70.pdf", forecaster
 ### Projection Plots
 policy <- c('No Intervention', 'Level 3', 'Level 5', 'Level 3 > Level 5',
             'Level 2 > Level 5', 'Level 1 > Level 5')
-UL_deaths <- round( sapply( Map(age_deaths, forecast_fits$UL, back = 56), sum )/10, 0 )[-7]
-MID_deaths <- round( sapply( Map(age_deaths, forecast_fits$MID, back = 56), sum )/10, 0 )[-7]
-LL_deaths <- round( sapply( Map(age_deaths, forecast_fits$LL, back = 56), sum )/10, 0 )[-7]
+UL_deaths <- sapply( Map(age_deaths, forecast_fits$UL, back = 56), sum )[-7]
+MID_deaths <- sapply( Map(age_deaths, forecast_fits$MID, back = 56), sum )[-7]
+LL_deaths <- sapply( Map(age_deaths, forecast_fits$LL, back = 56), sum )[-7]
 
-UL_cases <- round( sapply( Map(age_deaths, forecast_fits$UL, just_cases = TRUE, back = 56), sum )/1000, 0 )[-7]
-MID_cases <- round( sapply( Map(age_deaths, forecast_fits$MID, just_cases = TRUE, back = 56), sum )/1000, 0 )[-7]
-LL_cases <- round( sapply( Map(age_deaths, forecast_fits$LL, just_cases = TRUE, back = 56), sum )/1000, 0 )[-7]
+UL_cases <- sapply( Map(age_deaths, forecast_fits$UL, just_cases = TRUE, back = 56), sum )[-7]
+MID_cases <- sapply( Map(age_deaths, forecast_fits$MID, just_cases = TRUE, back = 56), sum )[-7]
+LL_cases <- sapply( Map(age_deaths, forecast_fits$LL, just_cases = TRUE, back = 56), sum )[-7]
 
 projection_df <- data.frame(Policy = policy, 
-                            Cases = paste0(MID_cases, ' (', LL_cases, ', ', UL_cases, ')'),
-                            Deaths = paste0(MID_deaths, ' (', LL_deaths, ', ', UL_deaths, ')'))
+                            Cases = paste0(round(MID_cases/1000, 0), ' (', 
+                                           round(LL_cases/1000, 0), ', ', 
+                                           round(UL_cases/1000, 0), ')'),
+                            Deaths = paste0(round(MID_deaths, 0), ' (', 
+                                            round(LL_deaths, 0), ', ', 
+                                            round(UL_deaths, 0), ')'))
 
 print(xtable(projection_df), include.rownames = FALSE)
 
 ### Projection Plots (with isolation)
-UL_deaths2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$UL, forecaster = TRUE, back = 56), sum )/10, 0 )[-7]
-MID_deaths2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$MID, forecaster = TRUE, back = 56), sum )/10, 0 )[-7]
-LL_deaths2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$LL, forecaster = TRUE, back = 56), sum )/10, 0 )[-7]
+UL_deaths2 <- sapply( Map(age_deaths, forecast_fits_isolated70$UL, forecaster = TRUE, back = 56), sum )[-7]
+MID_deaths2 <- sapply( Map(age_deaths, forecast_fits_isolated70$MID, forecaster = TRUE, back = 56), sum )[-7]
+LL_deaths2 <- sapply( Map(age_deaths, forecast_fits_isolated70$LL, forecaster = TRUE, back = 56), sum )[-7]
 
-UL_cases2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$UL, forecaster = TRUE, just_cases = TRUE, back = 56), sum )/1000, 0 )[-7]
-MID_cases2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$MID, forecaster = TRUE, just_cases = TRUE, back = 56), sum )/1000, 0 )[-7]
-LL_cases2 <- round( sapply( Map(age_deaths, forecast_fits_isolated70$LL, forecaster = TRUE, just_cases = TRUE, back = 56), sum )/1000, 0 )[-7]
+UL_cases2 <- sapply( Map(age_deaths, forecast_fits_isolated70$UL, forecaster = TRUE, just_cases = TRUE, back = 56), sum )[-7]
+MID_cases2 <- sapply( Map(age_deaths, forecast_fits_isolated70$MID, forecaster = TRUE, just_cases = TRUE, back = 56), sum )[-7]
+LL_cases2 <- sapply( Map(age_deaths, forecast_fits_isolated70$LL, forecaster = TRUE, just_cases = TRUE, back = 56), sum )[-7]
 
 projection_df2 <- data.frame(Policy = policy, 
-                             Cases = paste0(MID_cases2, ' (', LL_cases2, ', ', UL_cases2, ')'),
-                             Deaths = paste0(MID_deaths2, ' (', LL_deaths2, ', ', UL_deaths2, ')'))
+                             Cases = paste0(round(MID_cases2/1000, 0), ' (', 
+                                            round(LL_cases2/1000, 0), ', ', 
+                                            round(UL_cases2/1000, ), ')'),
+                             Deaths = paste0(round(MID_deaths2, 0), ' (', 
+                                             round(LL_deaths2, 0), ', ', 
+                                             round(UL_deaths2, 0), ')'))
 
 print(xtable(projection_df2), include.rownames = FALSE)
 
@@ -222,29 +230,29 @@ print(xtable(projection_df2), include.rownames = FALSE)
 all_cases <- sum( actual_dat_trim$Cases[7:nrow(actual_dat_trim)] )
 pdf('case_projections.pdf')
 par(mar = c(8, 4, 4, 2) + 0.1)
-plot(MID_cases[-1], ylim = c(0, 200000), col = 'white',
+plot(MID_cases[-1], ylim = c(0, 300000), col = 'white',
      ylab = 'Expected Cases', xlab = '', xaxt = 'n', yaxt = 'n')
 axis(1, at = 1:5, labels = policy[-1], las = 2)
-axis(2, at = seq(0, 200000, 50000), labels = seq(0, 20, 5))
+axis(2, at = seq(0, 300000, 50000), labels = seq(0, 30, 5))
 mtext(expression(x10^4), at = c(1, 20000))
 grid()
 arrows(x0 = 1:5, y0 = LL_cases[-1], y1 = UL_cases[-1], angle = 90,
        code = 3, length = 0.1, col = 'dodgerblue')
-points(MID_cases[-1], pch = '-', cex = 2, col = 'dodgerblue')
+points(MID_cases[-1], pch = 20, cex = 1, col = 'dodgerblue')
 abline(h = all_cases, lty = 2, col = 'orange')
 dev.off()
 
 pdf('case_projections_isolated.pdf')
 par(mar = c(8, 4, 4, 2) + 0.1)
-plot(MID_cases2[-1], ylim = c(0, 200000), col = 'white',
+plot(MID_cases2[-1], ylim = c(0, 300000), col = 'white',
      ylab = 'Expected Cases', xlab = '', xaxt = 'n', yaxt = 'n')
 axis(1, at = 1:5, labels = policy[-1], las = 2)
-axis(2, at = seq(0, 200000, 50000), labels = seq(0, 20, 5))
+axis(2, at = seq(0, 300000, 50000), labels = seq(0, 30, 5))
 mtext(expression(x10^4), at = c(1, 20000))
 grid()
-arrows(x0 = 1:5, y0 = LL_cases2[-1], y1 = UL_cases2[-1], angle = 90,
-       code = 3, length = 0.1, col = 'dodgerblue')
-points(MID_cases2[-1], pch = '-', cex = 2, col = 'dodgerblue')
+arrows(x0 = 1:5, y0 = LL_cases2[-1], y1 = UL_cases2[-1], 
+       angle = 90, code = 3, length = 0.1, col = 'dodgerblue')
+points(MID_cases2[-1], pch = 20, cex = 1, col = 'dodgerblue')
 abline(h = all_cases, lty = 2, col = 'orange')
 dev.off()
 

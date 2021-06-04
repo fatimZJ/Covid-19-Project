@@ -127,7 +127,7 @@ set_to_zero <- function(x, y = 15:16) {
 }
 contacts_isolated70 <- lapply(contacts, set_to_zero)
 
-dub_def_beta_isolated70 <- getbeta(3.7, pars = def_pars, p_age = dub_population$propage,
+dub_def_beta_isolated70 <- getbeta(3.4, pars = def_pars, p_age = dub_population$propage,
             CONTACTMATRIX = contacts_isolated70)
 
 cl <- makeCluster(n_cores)
