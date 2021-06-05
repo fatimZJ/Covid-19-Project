@@ -84,7 +84,7 @@ body <- dashboardBody(
 
 # Put them together into a dashboardPage
 dashboardPage( skin = "blue",
-  dashboardHeader(title = "Ireland COVID-19 Incidence Modelling",
+  dashboardHeader(title = "Dublin COVID-19 Incidence Modelling",
                   titleWidth = 380),
   sidebar,
   body

@@ -16,7 +16,7 @@ server <- function(input, output, session) {
   })
   
   output$General_Intro <- renderText({
-    "This webpage allows users to create 8 week forecasts based on our age structured SEIR model for modelling COVID-19 case counts in Ireland.
+    "This webpage allows users to create 8 week forecasts based on our age structured SEIR model for modelling COVID-19 case counts in Dublin, Ireland.
     These models are sensitive to certain assumptions regarding COVID-19 and so these numbers should only be considered an 
     uncertain projection."
   })

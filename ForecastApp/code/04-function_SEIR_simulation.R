@@ -90,7 +90,7 @@ SEIR_model_I <- function (t_ind, x, parms) {
   linfo <- parms[["linfo"]]
   N_age <- parms[["N_age"]]
   
-  if (as.numeric( difftime(as.Date('2020-02-28') + t_ind, as.Date('2020-02-28'), units = "days") ) >= 277) {
+  if (t_ind >= 277) {
     C1 <- parms[["C2"]]
     beta <- parms[["beta2"]]
   }
