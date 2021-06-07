@@ -128,7 +128,7 @@ SEIR_model_I <- function (t_ind, x, parms) {
 }
 
 SEIR_model_simulation <- function(pars,
-                                  dateStart = as.Date('2020-02-28'),
+                                  dateStart = as.Date('2020-02-29'),
                                   lockdown_information = NULL,
                                   POP = population,
                                   contacts_ireland = contacts,

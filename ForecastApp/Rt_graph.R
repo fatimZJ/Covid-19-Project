@@ -76,7 +76,7 @@ S_all <- res$solution[2:17]
 S <- rowSums(S_all)
 prop <- S / sum(pop$popage)
 theta <- rep(linfo$estimate, lens)
-solid_line <- theta*R0*prop
+solid_line <- theta*3.4*prop
 
 ### Run SEIR model for bootstraps
 # Parallel initiation
@@ -99,9 +99,10 @@ All_Runs <- foreach(i = 4:ncol(linfo_boots), .combine = cbind) %dopar% {
 #All_Runs <- foreach(i = 4:10, .combine = cbind) %dopar% {
   res_b <- SEIR_model_simulation(pars = def_pars,
                         contacts_ireland = contacts_IRL,
-                        dateStart = as.Date('2020-02-29'),
+                        #dateStart = as.Date('2020-02-29'),
                         startval = dub_xstart,
                         POP = pop,
+                        dt = 1,
                         beta = dub_def_beta,
                         tmax = endDate_tmax,
                         isolated_contacts = contacts_IRL,
@@ -139,11 +140,3 @@ abline(h = 1, lty = 2, col = 'orange', lwd = 2)
 #       bty = 'n')
 dev.off()
 
-######
-
-### Cases (quick check)
-Cc <- rowSums(res$solution[146:161])
-pdf('Cc_plot.pdf')
-plot( Cc, col = 'dodgerblue')#, lwd = 2 )
-dev.off()
-max(Cc)

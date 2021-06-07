@@ -6,12 +6,12 @@ source("global.R")
 library(xtable)
 
 ### Solve SEIR ODEs
-# Set dates  
+# Set dates (4 weeks per intervention)
 start_date <- as.Date("2021-02-01")
-date_start_seq <- c(start_date, start_date + 30)
-date_start_end <- c(start_date + 29, start_date + 55)
+start_date2 <- start_date + (4*7) + 1
+date_start_seq <- c(start_date, start_date2)
+date_start_end <- c(start_date2 - 1, start_date2 + (4*7))
 tmax <- as.numeric( difftime(start_date + 55, as.Date('2020-02-29'), units = "days") )
-start_date - date_start_end[2] - 1
 
 # Set lockdown levels
 all_levs <- vector("list", 7)
@@ -41,12 +41,13 @@ nms <- c( 'No intervention', 'Level 3', 'Level 5',
           'Level 3 > Level 5', 'Level 2 > Level 5',
           'Level 1 > Level 5', 'No Intervention > Level 5')
 costs_df <- data.frame(Policy = nms, Cost = costs)
+xtable(costs_df)
 
 pdf('projected_costs.pdf', height = 10)
 par(mar = c(8, 4, 4, 2) + 0.1)
-barplot(height = costs_df$Cost[-7], las = 2, ylim = c(-15, 15),
-        col = c('orange', rep('dodgerblue', 5)), 
-        names.arg = costs_df$Policy[-7], 
+barplot(height = costs_df$Cost[1:5], las = 2, ylim = c(-15, 15),
+        col = c('orange', rep('dodgerblue', 4)), 
+        names.arg = costs_df$Policy[1:5], 
         main = 'Projected Costs (in billions of euros)')
 abline(h = seq(-15, 15, 5), lty = 3, col = 'grey')
 dev.off()
@@ -80,7 +81,8 @@ clusterExport(
 UL <- MID <- LL <- vector("list", len)
 for (j in 1:len) {
   linfo <- all_linfo[[j]]
-  All_Runs <- foreach(i = 5:ncol(linfo), .combine = rbind) %dopar% {
+  #All_Runs <- foreach(i = 5:ncol(linfo), .combine = rbind) %dopar% {
+  All_Runs <- foreach(i = 5:10, .combine = rbind) %dopar% {
     SEIR_model_simulation(pars = def_pars,
                           contacts_ireland = contacts,
                           dateStart = as.Date('2020-02-29'),
