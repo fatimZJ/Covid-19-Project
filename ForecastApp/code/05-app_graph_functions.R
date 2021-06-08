@@ -96,7 +96,7 @@ comp_deaths <- function(x, forecaster = FALSE) {
   denom_2 <- denom_1 - def_pars["TT"]
   comps_sel <- (comps$I_Im + comps$I_No)/denom_1 + comps$I_Is/denom_2
   N <- nrow(comps_sel)
-  forcast <- (N-N_full+N_known+1):N 
+  forcast <- (N-N_full+N_known-1):N 
   
   if (!forecaster) {
     ags <- rep(0, 8)
