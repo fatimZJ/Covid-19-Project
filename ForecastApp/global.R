@@ -96,17 +96,17 @@
   ### Linearly interpolate missing lockdown measures
   L1 <- mean(c(L0, L2))
   L4 <- mean(c(L3, L5))
-  optim_res <- rbind(optim_res, data.frame(policy = paste0('Avg. Lockdown Level ', 0:5),
-                                           optim_res = c(L0, L1, L2, L3, L4, L5)))
+  optim_res <- rbind(optim_res, data.frame(policy = paste0('Lockdown Level ', c(1, 4)),
+                                           optim_res = c(L1, L4)))
   rm(L0, L1, L2, L3, L4, L5)
   
   ### Include new interventions into the bootstrap dataset
-  boot_lockdown_scalars['Avg. Lockdown Level 0'] <- boot_lockdown_scalars$`No Intervention`
-  boot_lockdown_scalars['Avg. Lockdown Level 2'] <- boot_lockdown_scalars$`Lockdown Level 2`
-  boot_lockdown_scalars['Avg. Lockdown Level 3'] <- boot_lockdown_scalars$`Lockdown Level 3`
-  boot_lockdown_scalars['Avg. Lockdown Level 5'] <- (boot_lockdown_scalars$`Lockdown Level 5`)
-  boot_lockdown_scalars['Avg. Lockdown Level 1'] <- (boot_lockdown_scalars$`Avg. Lockdown Level 0` + boot_lockdown_scalars$`Avg. Lockdown Level 2`)/2
-  boot_lockdown_scalars['Avg. Lockdown Level 4'] <- (boot_lockdown_scalars$`Avg. Lockdown Level 3` + boot_lockdown_scalars$`Avg. Lockdown Level 5`)/2
+  #boot_lockdown_scalars['Avg. Lockdown Level 0'] <- boot_lockdown_scalars$`No Intervention`
+  #boot_lockdown_scalars['Avg. Lockdown Level 2'] <- boot_lockdown_scalars$`Lockdown Level 2`
+  #boot_lockdown_scalars['Avg. Lockdown Level 3'] <- boot_lockdown_scalars$`Lockdown Level 3`
+  #boot_lockdown_scalars['Avg. Lockdown Level 5'] <- (boot_lockdown_scalars$`Lockdown Level 5`)
+  boot_lockdown_scalars['Lockdown Level 1'] <- (boot_lockdown_scalars$`No Intervention` + boot_lockdown_scalars$`Lockdown Level 2`)/2
+  boot_lockdown_scalars['Lockdown Level 4'] <- (boot_lockdown_scalars$`Lockdown Level 3` + boot_lockdown_scalars$`Lockdown Level 5`)/2
   
   ### Use the transposed bootstrapped data
   boot_scales_t <- cbind( policy = names(boot_lockdown_scalars), 

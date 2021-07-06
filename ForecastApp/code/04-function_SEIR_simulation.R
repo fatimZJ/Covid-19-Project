@@ -1,7 +1,6 @@
 ## Define the model for lsoda
 SEIR_model_D <- function (t_ind, x, parms) {
   
-  #browser()
   # Initialise the time-dependent variables
   S <- x[1:16]
   Ev <- x[17:32]
